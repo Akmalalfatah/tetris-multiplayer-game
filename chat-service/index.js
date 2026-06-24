@@ -1,0 +1,1 @@
+const express = require('express'); const app = express(); app.get('/health', (req, res) => res.json({status:'healthy', service:'chat-service'})); app.use((req,res)=>res.json({msg:'Hello from chat-service'})); app.listen(3004, () => console.log('chat-service running on 3004'));

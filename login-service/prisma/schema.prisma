@@ -1,0 +1,38 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  username      String    @unique @db.VarChar(30)
+  email         String    @unique @db.VarChar(255)
+  password_hash String    @db.VarChar(255)
+  created_at    DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime? @default(now()) @db.Timestamptz(6)
+  last_login    DateTime? @db.Timestamptz(6)
+  is_active     Boolean?  @default(true)
+  is_banned     Boolean?  @default(false)
+  sessions      Session[]
+
+  @@map("users")
+}
+
+model Session {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id       String   @db.Uuid
+  refresh_token String
+  device_info   String?
+  ip_address    String?  @db.Inet
+  created_at    DateTime? @default(now()) @db.Timestamptz(6)
+  expires_at    DateTime @db.Timestamptz(6)
+  is_revoked    Boolean? @default(false)
+  user          User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
