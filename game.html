@@ -1,554 +1,1244 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
+  <head>
+    <meta charset="UTF-8" />
     <title>Tetris 1v1 Multiplayer Arena</title>
     <style>
-        :root {
-            --bg-dark: #0c0f12;
-            --panel-bg: #1a1f26;
-            --accent-cyan: #00ffcc;
-            --border-color: #2d3748;
-            --text-muted: #a0aec0;
-        }
+      :root {
+        --bg-dark: #0c0f12;
+        --panel-bg: #1a1f26;
+        --accent-cyan: #00ffcc;
+        --border-color: #2d3748;
+        --text-muted: #a0aec0;
+      }
 
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: var(--bg-dark);
-            color: #fff;
-            margin: 0;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: var(--bg-dark);
+        color: #fff;
+        margin: 0;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
 
-        /* ── UTILITY CLASSES FOR PAGES ── */
-        .page { display: none; width: 900px; box-sizing: border-box; }
-        .page.active { display: flex; flex-direction: column; }
-        
-        .btn { padding: 10px 20px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; }
-        .btn-primary { background: #007acc; color: white; }
-        .btn-primary:hover { background: #005999; }
-        .btn-success { background: #28a745; color: white; }
-        .btn-success:hover { background: #218838; }
-        .btn-danger { background: #e53e3e; color: white; }
-        .btn-danger:hover { background: #c53030; }
+      /* ── UTILITY CLASSES FOR PAGES ── */
+      .page {
+        display: none;
+        width: 900px;
+        box-sizing: border-box;
+      }
+      .page.active {
+        display: flex;
+        flex-direction: column;
+      }
 
-        input { padding: 12px; border-radius: 6px; border: 1px solid #4a5568; background: #2d3748; color: #fff; font-size: 14px; }
+      .btn {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 6px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: 0.2s;
+      }
+      .btn-primary {
+        background: #007acc;
+        color: white;
+      }
+      .btn-primary:hover {
+        background: #005999;
+      }
+      .btn-success {
+        background: #28a745;
+        color: white;
+      }
+      .btn-success:hover {
+        background: #218838;
+      }
+      .btn-danger {
+        background: #e53e3e;
+        color: white;
+      }
+      .btn-danger:hover {
+        background: #c53030;
+      }
 
-        #login-page { max-width: 400px; margin: 100px auto 0 auto; background: var(--panel-bg); padding: 30px; border-radius: 12px; border: 1px solid var(--border-color); box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5); }
-        #login-page h2 { margin-top: 0; color: var(--accent-cyan); text-align: center; }
-        .form-group { display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px; }
+      input {
+        padding: 12px;
+        border-radius: 6px;
+        border: 1px solid #4a5568;
+        background: #2d3748;
+        color: #fff;
+        font-size: 14px;
+      }
 
-        .welcome-header { display: flex; justify-content: space-between; align-items: center; background: var(--panel-bg); padding: 15px 20px; border-radius: 10px; border: 1px solid var(--border-color); margin-bottom: 20px; }
-        .home-grid { display: flex; gap: 20px; height: 450px; }
-        .menu-panel { width: 35%; background: var(--panel-bg); border-radius: 12px; border: 1px solid var(--border-color); padding: 20px; display: flex; flex-direction: column; gap: 15px; }
-        .highscore-box { width: 65%; background: var(--panel-bg); border-radius: 12px; border: 1px solid var(--border-color); padding: 20px; box-sizing: border-box; }
-        .highscore-table { width: 100%; border-collapse: collapse; margin-top: 15px; text-align: left; }
-        .highscore-table th, .highscore-table td { padding: 12px; border-bottom: 1px solid var(--border-color); }
-        .highscore-table th { color: var(--text-muted); }
-        .highscore-table tr:hover { background: rgba(255, 255, 255, 0.02); }
+      #login-page {
+        max-width: 400px;
+        margin: 100px auto 0 auto;
+        background: var(--panel-bg);
+        padding: 30px;
+        border-radius: 12px;
+        border: 1px solid var(--border-color);
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+      }
+      #login-page h2 {
+        margin-top: 0;
+        color: var(--accent-cyan);
+        text-align: center;
+      }
+      .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin-bottom: 15px;
+      }
 
-        .arena-container { display: flex; gap: 20px; height: 530px; }
-        .battlefields { display: flex; background: var(--panel-bg); padding: 15px; border-radius: 12px; border: 1px solid var(--border-color); gap: 20px; align-items: center; }
-        .screen-label { text-align: center; margin-bottom: 5px; font-size: 12px; font-weight: bold; color: var(--text-muted); text-transform: uppercase; }
-        canvas { background: #111418; border: 2px solid #4a5568; border-radius: 6px; }
-        canvas#enemy-tetris { background: #111418; border: 2px dashed #e53e3e; opacity: 0.8; }
+      .welcome-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: var(--panel-bg);
+        padding: 15px 20px;
+        border-radius: 10px;
+        border: 1px solid var(--border-color);
+        margin-bottom: 20px;
+      }
+      .home-grid {
+        display: flex;
+        gap: 20px;
+        height: 450px;
+      }
+      .menu-panel {
+        width: 35%;
+        background: var(--panel-bg);
+        border-radius: 12px;
+        border: 1px solid var(--border-color);
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+      }
+      .highscore-box {
+        width: 65%;
+        background: var(--panel-bg);
+        border-radius: 12px;
+        border: 1px solid var(--border-color);
+        padding: 20px;
+        box-sizing: border-box;
+      }
+      .highscore-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 15px;
+        text-align: left;
+      }
+      .highscore-table th,
+      .highscore-table td {
+        padding: 12px;
+        border-bottom: 1px solid var(--border-color);
+      }
+      .highscore-table th {
+        color: var(--text-muted);
+      }
+      .highscore-table tr:hover {
+        background: rgba(255, 255, 255, 0.02);
+      }
 
-        .game-controls { display: flex; flex-direction: column; justify-content: space-between; height: 440px; width: 110px; }
-        .stats-group { display: flex; flex-direction: column; gap: 8px; }
-        .mini-box { background: #2d3748; padding: 6px; border-radius: 4px; text-align: center; font-size: 12px; }
-        .mini-box div { font-size: 16px; font-weight: bold; color: var(--accent-cyan); }
-        .mini-box h3 { margin: 0 0 4px 0; font-size: 12px; color: var(--text-muted); }
+      .arena-container {
+        display: flex;
+        gap: 20px;
+        height: 530px;
+      }
+      .battlefields {
+        display: flex;
+        background: var(--panel-bg);
+        padding: 15px;
+        border-radius: 12px;
+        border: 1px solid var(--border-color);
+        gap: 20px;
+        align-items: center;
+      }
+      .screen-label {
+        text-align: center;
+        margin-bottom: 5px;
+        font-size: 12px;
+        font-weight: bold;
+        color: var(--text-muted);
+        text-transform: uppercase;
+      }
+      canvas {
+        background: #111418;
+        border: 2px solid #4a5568;
+        border-radius: 6px;
+      }
+      canvas#enemy-tetris {
+        background: #111418;
+        border: 2px dashed #e53e3e;
+        opacity: 0.8;
+      }
 
-        .chat-sidebar { flex-grow: 1; display: flex; flex-direction: column; background: var(--panel-bg); border-radius: 12px; border: 1px solid var(--border-color); padding: 15px; box-sizing: border-box; }
-        .chat-box-area { flex-grow: 1; background: #111418; border: 1px solid var(--border-color); overflow-y: auto; padding: 10px; margin-bottom: 10px; border-radius: 6px; font-size: 13px; }
-        .chat-input-zone { display: flex; gap: 5px; }
-        .chat-input-zone input { flex-grow: 1; padding: 8px; }
-        .msg-item { margin-bottom: 5px; font-size: 13px; border-bottom: 1px solid #232934; padding-bottom: 3px; }
-        .username { color: var(--accent-cyan); font-weight: bold; }
+      .game-controls {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        height: 440px;
+        width: 110px;
+      }
+      .stats-group {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .mini-box {
+        background: #2d3748;
+        padding: 6px;
+        border-radius: 4px;
+        text-align: center;
+        font-size: 12px;
+      }
+      .mini-box div {
+        font-size: 16px;
+        font-weight: bold;
+        color: var(--accent-cyan);
+      }
+      .mini-box h3 {
+        margin: 0 0 4px 0;
+        font-size: 12px;
+        color: var(--text-muted);
+      }
+
+      .chat-sidebar {
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+        background: var(--panel-bg);
+        border-radius: 12px;
+        border: 1px solid var(--border-color);
+        padding: 15px;
+        box-sizing: border-box;
+      }
+      .chat-box-area {
+        flex-grow: 1;
+        background: #111418;
+        border: 1px solid var(--border-color);
+        overflow-y: auto;
+        padding: 10px;
+        margin-bottom: 10px;
+        border-radius: 6px;
+        font-size: 13px;
+      }
+      .chat-input-zone {
+        display: flex;
+        gap: 5px;
+      }
+      .chat-input-zone input {
+        flex-grow: 1;
+        padding: 8px;
+      }
+      .msg-item {
+        margin-bottom: 5px;
+        font-size: 13px;
+        border-bottom: 1px solid #232934;
+        padding-bottom: 3px;
+      }
+      .username {
+        color: var(--accent-cyan);
+        font-weight: bold;
+      }
     </style>
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
-</head>
-<body>
-
-    <div id="match-result-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 999; flex-direction: column; justify-content: center; align-items: center;">
-        <div style="background: var(--panel-bg); padding: 40px; border-radius: 15px; border: 2px solid var(--accent-cyan); text-align: center; max-width: 400px; box-shadow: 0 0 20px rgba(0,255,204,0.3);">
-            <h2 id="result-title" style="color: #ffcc00; margin-top: 0; font-size: 28px;">👑 MATCH FINISHED</h2>
-            <p id="result-desc" style="font-size: 16px; margin: 20px 0; color: #fff;"></p>
-            <button class="btn btn-primary" style="width: 100%; font-size: 16px; padding: 12px;" onclick="closeResultAndGoHome()">KEMBALI KE BERANDA 🏠</button>
-        </div>
+  </head>
+  <body>
+    <div
+      id="match-result-overlay"
+      style="
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.85);
+        z-index: 999;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+      "
+    >
+      <div
+        style="
+          background: var(--panel-bg);
+          padding: 40px;
+          border-radius: 15px;
+          border: 2px solid var(--accent-cyan);
+          text-align: center;
+          max-width: 400px;
+          box-shadow: 0 0 20px rgba(0, 255, 204, 0.3);
+        "
+      >
+        <h2
+          id="result-title"
+          style="color: #ffcc00; margin-top: 0; font-size: 28px"
+        >
+          👑 MATCH FINISHED
+        </h2>
+        <p
+          id="result-desc"
+          style="font-size: 16px; margin: 20px 0; color: #fff"
+        ></p>
+        <button
+          class="btn btn-primary"
+          style="width: 100%; font-size: 16px; padding: 12px"
+          onclick="closeResultAndGoHome()"
+        >
+          KEMBALI KE BERANDA 🏠
+        </button>
+      </div>
     </div>
 
     <div id="login-page" class="page active">
-        <div style="display: flex; justify-content: space-around; margin-bottom: 20px; border-bottom: 2px solid var(--border-color);">
-            <h3 id="tab-login-btn" style="color: var(--accent-cyan); cursor: pointer; margin: 0; padding-bottom: 10px;" onclick="switchAuthTab('login')">LOGIN</h3>
-            <h3 id="tab-register-btn" style="color: var(--text-muted); cursor: pointer; margin: 0; padding-bottom: 10px;" onclick="switchAuthTab('register')">REGISTER</h3>
-        </div>
+      <div
+        style="
+          display: flex;
+          justify-content: space-around;
+          margin-bottom: 20px;
+          border-bottom: 2px solid var(--border-color);
+        "
+      >
+        <h3
+          id="tab-login-btn"
+          style="
+            color: var(--accent-cyan);
+            cursor: pointer;
+            margin: 0;
+            padding-bottom: 10px;
+          "
+          onclick="switchAuthTab('login')"
+        >
+          LOGIN
+        </h3>
+        <h3
+          id="tab-register-btn"
+          style="
+            color: var(--text-muted);
+            cursor: pointer;
+            margin: 0;
+            padding-bottom: 10px;
+          "
+          onclick="switchAuthTab('register')"
+        >
+          REGISTER
+        </h3>
+      </div>
 
-        <div id="form-login-container">
-            <h2>Tetris Gateway Login</h2>
-            <div class="form-group">
-                <label>Email Address</label>
-                <input type="text" id="login-email" placeholder="Masukkan email..." value="akmal@tetris.com">
-            </div>
-            <div class="form-group">
-                <label>Password</label>
-                <input type="password" id="login-password" placeholder="Masukkan password..." value="Password123">
-            </div>
-            <button class="btn btn-primary" style="width: 100%; margin-top: 10px;" onclick="handleAuthLogin()">MASUK SYSTEM 🔐</button>
+      <div id="form-login-container">
+        <h2>Tetris Gateway Login</h2>
+        <div class="form-group">
+          <label>Email Address</label>
+          <input
+            type="text"
+            id="login-email"
+            placeholder="Masukkan email..."
+            value=""
+          />
         </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input
+            type="password"
+            id="login-password"
+            placeholder="Masukkan password..."
+            value=""
+          />
+        </div>
+        <button
+          class="btn btn-primary"
+          style="width: 100%; margin-top: 10px"
+          onclick="handleAuthLogin()"
+        >
+          MASUK SYSTEM 🔐
+        </button>
+      </div>
 
-        <div id="form-register-container" style="display: none;">
-            <h2>Create New Account</h2>
-            <div class="form-group">
-                <label>Username</label>
-                <input type="text" id="reg-username" placeholder="Pilih username unik...">
-            </div>
-            <div class="form-group">
-                <label>Email Address</label>
-                <input type="text" id="reg-email" placeholder="Masukkan email aktif...">
-            </div>
-            <div class="form-group">
-                <label>Password</label>
-                <input type="password" id="reg-password" placeholder="Buat password aman...">
-            </div>
-            <button class="btn btn-success" style="width: 100%; margin-top: 10px;" onclick="handleAuthRegister()">DAFTAR AKUN 🚀</button>
+      <div id="form-register-container" style="display: none">
+        <h2>Create New Account</h2>
+        <div class="form-group">
+          <label>Username</label>
+          <input
+            type="text"
+            id="reg-username"
+            placeholder="Pilih username unik..."
+          />
         </div>
+        <div class="form-group">
+          <label>Email Address</label>
+          <input
+            type="text"
+            id="reg-email"
+            placeholder="Masukkan email aktif..."
+          />
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input
+            type="password"
+            id="reg-password"
+            placeholder="Buat password aman..."
+          />
+        </div>
+        <button
+          class="btn btn-success"
+          style="width: 100%; margin-top: 10px"
+          onclick="handleAuthRegister()"
+        >
+          DAFTAR AKUN 🚀
+        </button>
+      </div>
     </div>
 
     <div id="home-page" class="page">
-        <div class="welcome-header">
-            <div>Selamat Datang, <span id="user-display-name" style="color: var(--accent-cyan); font-weight: bold;">Player</span>!</div>
-            <button class="btn btn-danger" onclick="logout()">Logout</button>
+      <div class="welcome-header">
+        <div>
+          Selamat Datang,
+          <span
+            id="user-display-name"
+            style="color: var(--accent-cyan); font-weight: bold"
+            >Player</span
+          >!
+        </div>
+        <button class="btn btn-danger" onclick="logout()">Logout</button>
+      </div>
+
+      <div class="home-grid">
+        <div class="menu-panel">
+          <h3 style="margin: 0; color: var(--text-muted)">MENU UTAMA</h3>
+          <button
+            class="btn btn-success"
+            id="match-btn"
+            style="font-size: 16px; padding: 15px"
+            onclick="startMatchmaking()"
+          >
+            CARI LAWAN TANDING ⚔️
+          </button>
+          <p
+            style="
+              font-size: 12px;
+              color: var(--text-muted);
+              text-align: center;
+              margin: 0;
+            "
+          >
+            Atau nikmati interaksi obrolan global sebelum bertanding.
+          </p>
+
+          <div
+            class="chat-sidebar"
+            style="
+              height: 100%;
+              padding: 0;
+              background: transparent;
+              border: none;
+            "
+          >
+            <div
+              id="chat-box-home"
+              class="chat-box-area"
+              style="height: 180px"
+            ></div>
+            <div class="chat-input-zone">
+              <input
+                type="text"
+                id="message-home"
+                placeholder="Ketik pesan di beranda..."
+              />
+              <button
+                class="btn btn-primary"
+                onclick="sendGlobalChat('message-home')"
+              >
+                Kirim
+              </button>
+            </div>
+          </div>
         </div>
 
-        <div class="home-grid">
-            <div class="menu-panel">
-                <h3 style="margin: 0; color: var(--text-muted);">MENU UTAMA</h3>
-                <button class="btn btn-success" id="match-btn" style="font-size: 16px; padding: 15px;" onclick="startMatchmaking()">CARI LAWAN TANDING ⚔️</button>
-                <p style="font-size: 12px; color: var(--text-muted); text-align: center; margin: 0;">Atau nikmati interaksi obrolan global sebelum bertanding.</p>
-
-                <div class="chat-sidebar" style="height: 100%; padding: 0; background: transparent; border: none;">
-                    <div id="chat-box-home" class="chat-box-area" style="height: 180px;"></div>
-                    <div class="chat-input-zone">
-                        <input type="text" id="message-home" placeholder="Ketik pesan di beranda...">
-                        <button class="btn btn-primary" onclick="sendGlobalChat('message-home')">Kirim</button>
-                    </div>
-                </div>
-            </div>
-
-            <div class="highscore-box">
-                <h3 style="margin: 0; color: var(--accent-cyan);">🏆 TOP RANKING HIGHSCORE</h3>
-                <table class="highscore-table">
-                    <thead>
-                        <tr>
-                            <th>Rank</th>
-                            <th>Username</th>
-                            <th>High Score</th>
-                            <th>Tanggal Main</th>
-                        </tr>
-                    </thead>
-                    <tbody id="highscore-list"></tbody>
-                </table>
-            </div>
+        <div class="highscore-box">
+          <h3 style="margin: 0; color: var(--accent-cyan)">
+            🏆 TOP RANKING HIGHSCORE
+          </h3>
+          <table class="highscore-table">
+            <thead>
+              <tr>
+                <th>Rank</th>
+                <th>Username</th>
+                <th>High Score</th>
+                <th>Tanggal Main</th>
+              </tr>
+            </thead>
+            <tbody id="highscore-list"></tbody>
+          </table>
         </div>
+      </div>
     </div>
 
     <div id="game-page" class="page">
-        <div class="arena-container">
-            <div class="battlefields">
-                <div>
-                    <div class="screen-label" style="color: var(--accent-cyan);">Anda</div>
-                    <canvas id="tetris" width="220" height="440"></canvas>
-                </div>
-
-                <div class="game-controls">
-                    <div class="stats-group">
-                        <div class="mini-box"><h3>Next</h3><canvas id="next" width="70" height="70"></canvas></div>
-                        <div class="mini-box"><h3>Score</h3><div id="score">0</div></div>
-                        <div class="mini-box"><h3>Level</h3><div id="level">1</div></div>
-                    </div>
-                    <div style="display:flex; flex-direction:column; gap:5px;">
-                        <button class="btn btn-success" id="start-btn" onclick="startGame()">START</button>
-                        <button class="btn btn-danger" id="retreat-btn" onclick="playerRetreat()" style="display: none; background: #d9534f;">RETREAT 🏳️</button>
-                        <button class="btn btn-danger" id="back-home-btn" onclick="backToHome()" style="display: none;">BERANDA</button>
-                    </div>
-                </div>
-
-                <div>
-                    <div class="screen-label" style="color: #e53e3e;">Layar Musuh</div>
-                    <canvas id="enemy-tetris" width="150" height="300"></canvas>
-                </div>
+      <div class="arena-container">
+        <div class="battlefields">
+          <div>
+            <div class="screen-label" style="color: var(--accent-cyan)">
+              Anda
             </div>
+            <canvas id="tetris" width="220" height="440"></canvas>
+          </div>
 
-            <div class="chat-sidebar">
-                <h4 style="margin: 0 0 8px 0; color: var(--text-muted);">IN-GAME CHAT</h4>
-                <div id="chat-box-game" class="chat-box-area"></div>
-                <div class="chat-input-zone">
-                    <input type="text" id="message-game" placeholder="Ketik obrolan ingame..." onkeypress="handleGameChatKey(event)">
-                    <button class="btn btn-primary" onclick="sendGlobalChat('message-game')">Kirim</button>
-                </div>
+          <div class="game-controls">
+            <div class="stats-group">
+              <div class="mini-box">
+                <h3>Next</h3>
+                <canvas id="next" width="70" height="70"></canvas>
+              </div>
+              <div class="mini-box">
+                <h3>Score</h3>
+                <div id="score">0</div>
+              </div>
+              <div class="mini-box">
+                <h3>Level</h3>
+                <div id="level">1</div>
+              </div>
             </div>
+            <div style="display: flex; flex-direction: column; gap: 5px">
+              <button
+                class="btn btn-success"
+                id="start-btn"
+                onclick="startGame()"
+              >
+                START
+              </button>
+              <button
+                class="btn btn-danger"
+                id="retreat-btn"
+                onclick="playerRetreat()"
+                style="display: none; background: #d9534f"
+              >
+                RETREAT 🏳️
+              </button>
+              <button
+                class="btn btn-danger"
+                id="back-home-btn"
+                onclick="backToHome()"
+                style="display: none"
+              >
+                BERANDA
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <div class="screen-label" style="color: #e53e3e">Layar Musuh</div>
+            <canvas id="enemy-tetris" width="150" height="300"></canvas>
+          </div>
         </div>
+
+        <div class="chat-sidebar">
+          <h4 style="margin: 0 0 8px 0; color: var(--text-muted)">
+            IN-GAME CHAT
+          </h4>
+          <div id="chat-box-game" class="chat-box-area"></div>
+          <div class="chat-input-zone">
+            <input
+              type="text"
+              id="message-game"
+              placeholder="Ketik obrolan ingame..."
+              onkeypress="handleGameChatKey(event)"
+            />
+            <button
+              class="btn btn-primary"
+              onclick="sendGlobalChat('message-game')"
+            >
+              Kirim
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <script>
-        let currentRoomId = null;
-        let opponentUser = "Musuh";
-        let currentUser = "Pemain";
-        let accessToken = "";
-        let socket;
+      let currentRoomId = null;
+      let opponentUser = "Musuh";
+      let currentUser = "Pemain";
+      let accessToken = "";
+      let socket;
 
-        let highscores = [
-            { rank: 1, username: "Akmal_Developer", score: 12450, date: "2026-06-24", grade: "A" },
-            { rank: 2, username: "player_dua", score: 8920, date: "2026-06-25", grade: "A" },
-            { rank: 3, username: "tetris_master", score: 5300, date: "2026-06-23", grade: "C" }
-        ];
+      let highscores = [];
 
-        function navigateTo(pageId) {
-            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-            document.getElementById(pageId).classList.add('active');
-
-            if (pageId === 'home-page') { renderHighscores(); }
-            if (pageId === 'game-page') { setTimeout(() => draw(), 50); }
+      async function loadRankings() {
+        try {
+          const response = await fetch("/api/rankings");
+          if (!response.ok) {
+            throw new Error("Gagal mengambil ranking");
+          }
+          highscores = await response.json();
+          renderHighscores();
+        } catch (err) {
+          console.error("Gagal load rankings:", err);
         }
+      }
 
-        // ── WEBSOCKET GABUNGAN UTUH ──────────────────────────────────────────
-        function initializeSocketConnection() {
-            socket = io("http://localhost", {
-                path: "/api/chat/socket.io",
-                auth: { token: accessToken }
-            });
+      async function saveScore(score) {
+        try {
+          const username = currentUser;
+          const parsedScore = Math.floor(Number(score));
 
-            socket.on("receive_message", (data) => {
-                const time = new Date(data.timestamp).toLocaleTimeString();
-                const cleanHTML = `[${time}] <span class="username">${data.username}</span>: ${data.message}`;
-                document.getElementById("chat-box-home").innerHTML += `<div class="msg-item">${cleanHTML}</div>`;
-                
-                const gameChat = document.getElementById("chat-box-game");
-                gameChat.innerHTML += `<div class="msg-item">${cleanHTML}</div>`;
-                gameChat.scrollTop = gameChat.scrollHeight;
-            });
+          if (!username || isNaN(parsedScore) || parsedScore < 0) return;
 
-            socket.on("match_found", (data) => {
-                currentRoomId = data.roomId;
-                opponentUser = data.opponent;
+          const response = await fetch("/api/rankings/update", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${accessToken}`,
+            },
+            body: JSON.stringify({ username, score: parsedScore }),
+          });
 
-                const matchBtn = document.getElementById("match-btn");
-                matchBtn.innerText = "CARI LAWAN TANDING ⚔️";
-                matchBtn.disabled = false;
+          const result = await response.json();
+          console.log("Score saved:", result);
 
-                alert(`🎮 Lawan ditemukan! Anda akan bertanding melawan: ${opponentUser}`);
-                navigateTo("game-page");
-                startGame();
-            });
-
-            socket.on("enemy_board_update", (data) => {
-                if (data.username !== currentUser) {
-                    enemyArena = data.arena;
-                }
-            });
-
-            socket.on("enemy_retreated", (data) => {
-                if (gameRunning) {
-                    gameRunning = false; // Freeze gameplay instan
-                    
-                    player.score += 500; // Bonus kemenangan WO
-                    document.getElementById('score').innerText = player.score;
-
-                    const userGrade = calculateGrade(player.score);
-                    highscores.push({
-                        rank: 0, username: currentUser, score: player.score,
-                        date: new Date().toISOString().split('T')[0], grade: userGrade
-                    });
-
-                    // Munculkan UI Hasil Menang WO
-                    document.getElementById("result-title").innerText = "🎉 YOU WIN! (Lawan WO)";
-                    document.getElementById("result-title").style.color = "var(--accent-cyan)";
-                    document.getElementById("result-desc").innerHTML = `
-                        Musuh (<strong>${data.username}</strong>) telah menyerah dari pertandingan.<br><br>
-                        Skor Akhir Anda: <strong>${player.score}</strong> (${userGrade})
-                    `;
-                    document.getElementById("match-result-overlay").style.display = "flex";
-                }
-            });
+          if (result.success) {
+            await loadRankings();
+          }
+        } catch (err) {
+          console.error("Failed to save score:", err);
         }
+      }
 
-        // ── LOGIKA AUTENTIKASI API GATEWAY ─────────────────────────────────────
-        async function handleAuthLogin() {
-            const email = document.getElementById("login-email").value.trim();
-            const password = document.getElementById("login-password").value.trim();
+      function navigateTo(pageId) {
+        document
+          .querySelectorAll(".page")
+          .forEach((p) => p.classList.remove("active"));
+        document.getElementById(pageId).classList.add("active");
 
-            try {
-                const response = await fetch("http://localhost/api/auth/login", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ email, password })
-                });
-                const result = await response.json();
-
-                if (result.success) {
-                    accessToken = result.data.accessToken;
-                    currentUser = result.data.user.username;
-                    document.getElementById("user-display-name").innerText = currentUser;
-
-                    initializeSocketConnection();
-                    navigateTo("home-page");
-                } else {
-                    alert("Gagal login: " + result.message);
-                }
-            } catch (err) {
-                alert("Koneksi gagal ke Auth Service API Gateway!");
-            }
+        if (pageId === "home-page") {
+          loadRankings();
         }
-
-        async function handleAuthRegister() {
-            const username = document.getElementById("reg-username").value.trim();
-            const email = document.getElementById("reg-email").value.trim();
-            const password = document.getElementById("reg-password").value.trim();
-
-            if (!username || !email || !password) {
-                alert("Semua kolom registrasi wajib diisi!");
-                return;
-            }
-
-            try {
-                const response = await fetch("http://localhost/api/auth/register", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ username, email, password })
-                });
-                const result = await response.json();
-
-                if (result.success || response.status === 201 || result.id) {
-                    alert("🎉 Registrasi berhasil! Silakan login.");
-                    switchAuthTab('login');
-                    document.getElementById("login-email").value = email;
-                    document.getElementById("login-password").value = password;
-                } else {
-                    alert("Gagal registrasi: " + (result.message || "Periksa data Anda kembali."));
-                }
-            } catch (err) {
-                alert("Koneksi gagal ke Register Service API Gateway!");
-            }
+        if (pageId === "game-page") {
+          setTimeout(() => draw(), 50);
         }
+      }
 
-        function switchAuthTab(type) {
-            document.getElementById("form-login-container").style.display = type === 'login' ? "block" : "none";
-            document.getElementById("form-register-container").style.display = type === 'login' ? "none" : "block";
-            document.getElementById("tab-login-btn").style.color = type === 'login' ? "var(--accent-cyan)" : "var(--text-muted)";
-            document.getElementById("tab-register-btn").style.color = type === 'login' ? "var(--text-muted)" : "var(--accent-cyan)";
-        }
-
-        function logout() { if (socket) socket.disconnect(); navigateTo("login-page"); }
-        function backToHome() { gameRunning = false; document.getElementById('back-home-btn').style.display = 'none'; document.getElementById('start-btn').style.display = 'block'; navigateTo("home-page"); }
-        function sendGlobalChat(inputId) { const el = document.getElementById(inputId); const msg = el.value.trim(); if (!msg || !socket) return; socket.emit("send_message", { username: currentUser, message: msg }); el.value = ""; }
-        function handleGameChatKey(e) { if (e.key === "Enter") sendGlobalChat('message-game'); }
-
-        function renderHighscores() {
-            const tbody = document.getElementById("highscore-list");
-            tbody.innerHTML = "";
-            highscores.sort((a, b) => b.score - a.score);
-            highscores.forEach((item, index) => {
-                tbody.innerHTML += `<tr><td>${index + 1}</td><td><span class="username">${item.username}</span></td><td><strong>${item.score.toLocaleString()}</strong> <small style="color:#ffcc00">(${item.grade})</small></td><td>${item.date}</td></tr>`;
-            });
-        }
-        function calculateGrade(score) { 
-            let n = score / 50; 
-            if (n >= 86) return "A"; // Mengikuti bobot acuan sistem [cite: 2025-10-03]
-            if (n >= 75) return "B"; // Mengikuti bobot acuan sistem [cite: 2025-10-03]
-            if (n >= 65) return "C"; // Mengikuti bobot acuan sistem [cite: 2025-10-03]
-            return "D"; 
-        }
-
-        // ── TETRIS CORE ENGINE GAMEPLAY ───────────────────────────────────────
-        const canvas = document.getElementById('tetris');
-        const context = canvas.getContext('2d');
-        context.scale(22, 22);
-
-        const nextCanvas = document.getElementById('next');
-        const nextContext = nextCanvas.getContext('2d');
-        nextContext.scale(17, 17);
-
-        const enemyCanvas = document.getElementById('enemy-tetris');
-        const enemyContext = enemyCanvas.getContext('2d');
-        enemyContext.scale(15, 15);
-
-        const colors = [null, '#FF0D72', '#0DC2FF', '#0DFF72', '#F538FF', '#FF8E0D', '#FFE138', '#3877FF'];
-        let arena = createMatrix(10, 20);
-        let enemyArena = createMatrix(10, 20);
-        let player = { pos: {x: 0, y: 0}, matrix: null, nextMatrix: null, holdMatrix: null, hasHeld: false, score: 0, lines: 0, level: 1 };
-        let dropCounter = 0, dropInterval = 1000, lastTime = 0, gameRunning = false, keyStates = {}, moveTimers = {};
-
-        function createMatrix(w, h) { const m = []; while (h--) { m.push(new Array(w).fill(0)); } return m; }
-        function createPiece(type) {
-            if (type === 'T') return [[0, 0, 0], [1, 1, 1], [0, 1, 0]];
-            if (type === 'O') return [[2, 2], [2, 2]];
-            if (type === 'L') return [[0, 3, 0], [0, 3, 0], [0, 3, 3]];
-            if (type === 'J') return [[0, 4, 0], [0, 4, 0], [4, 4, 0]];
-            if (type === 'I') return [[0, 0, 0, 0], [5, 5, 5, 5], [0, 0, 0, 0], [0, 0, 0, 0]];
-            if (type === 'S') return [[0, 6, 6], [6, 6, 0], [0, 0, 0]];
-            if (type === 'Z') return [[7, 7, 0], [0, 7, 7], [0, 0, 0]];
-        }
-
-        function drawMatrix(matrix, offset, ctx, isGhost = false) {
-            matrix.forEach((row, y) => {
-                row.forEach((value, x) => {
-                    if (value !== 0) {
-                        ctx.fillStyle = isGhost ? 'rgba(255, 255, 255, 0.12)' : colors[value];
-                        ctx.fillRect(x + offset.x, y + offset.y, 1, 1);
-                        ctx.lineWidth = 0.05;
-                        ctx.strokeStyle = isGhost ? colors[value] : '#111';
-                        ctx.strokeRect(x + offset.x, y + offset.y, 1, 1);
-                    }
-                });
-            });
-        }
-
-        function getGhostPosition() { const g = { x: player.pos.x, y: player.pos.y }; while (!collide(arena, { pos: g, matrix: player.matrix })) { g.y++; } g.y--; return g; }
-
-        function draw() {
-            context.fillStyle = '#111418';
-            context.fillRect(0, 0, canvas.width, canvas.height);
-            drawMatrix(arena, {x: 0, y: 0}, context);
-            if(gameRunning) { drawMatrix(player.matrix, getGhostPosition(), context, true); drawMatrix(player.matrix, player.pos, context); }
-
-            enemyContext.fillStyle = '#111418';
-            enemyContext.fillRect(0, 0, enemyCanvas.width, enemyCanvas.height);
-            drawMatrix(enemyArena, {x: 0, y: 0}, enemyContext);
-
-            nextContext.fillStyle = '#111418';
-            nextContext.fillRect(0, 0, nextCanvas.width, nextCanvas.height);
-            if (player.nextMatrix) drawMatrix(player.nextMatrix, {x: 1, y: 1}, nextContext);
-
-            if (gameRunning && socket && socket.connected && currentRoomId) {
-                socket.emit("player_board_update", { roomId: currentRoomId, username: currentUser, arena: arena });
-            }
-        }
-
-        function collide(a, p) {
-            const [m, o] = [p.matrix, p.pos];
-            for (let y = 0; y < m.length; ++y) {
-                for (let x = 0; x < m[y].length; ++x) { if (m[y][x] !== 0 && (a[y + o.y] && a[y + o.y][x + o.x]) !== 0) return true; }
-            }
-            return false;
-        }
-
-        function merge(a, p) { p.matrix.forEach((row, y) => { row.forEach((val, x) => { if (val !== 0) a[y + p.pos.y][x + p.pos.x] = val; }); }); }
-        function playerDrop() { player.pos.y++; if (collide(arena, player)) { player.pos.y--; merge(arena, player); playerReset(); arenaSweep(); } dropCounter = 0; }
-        function playerHardDrop() { if (!gameRunning) return; player.pos.y = getGhostPosition().y; merge(arena, player); playerReset(); arenaSweep(); dropCounter = 0; }
-        function playerHold() {
-            if (!gameRunning || player.hasHeld) return;
-            if (!player.holdMatrix) { player.holdMatrix = player.matrix; playerReset(); } 
-            else { const t = player.matrix; player.matrix = player.holdMatrix; player.holdMatrix = t; player.pos.y = 0; player.pos.x = (arena[0].length / 2 | 0) - (player.matrix[0].length / 2 | 0); }
-            player.hasHeld = true;
-        }
-
-        function arenaSweep() {
-            let rc = 1;
-            outer: for (let y = arena.length - 1; y > 0; --y) {
-                for (let x = 0; x < arena[y].length; ++x) { if (arena[y][x] === 0) continue outer; }
-                const row = arena.splice(y, 1)[0].fill(0); arena.unshift(row); ++y;
-                player.score += rc * 120; player.lines++; rc *= 2;
-                if (player.lines % 3 === 0) { player.level++; }
-            }
-            document.getElementById('score').innerText = player.score;
-            document.getElementById('level').innerText = player.level;
-        }
-
-        function playerReset() {
-            const p = 'ILJOTSZ';
-            player.matrix = player.nextMatrix || createPiece(p[p.length * Math.random() | 0]);
-            player.nextMatrix = createPiece(p[p.length * Math.random() | 0]);
-            player.pos.y = 0; player.pos.x = (arena[0].length / 2 | 0) - (player.matrix[0].length / 2 | 0); player.hasHeld = false;
-
-            if (collide(arena, player)) {
-                gameRunning = false;
-                alert('💥 MATCH OVER! Score Anda: ' + player.score);
-                
-                const userGrade = calculateGrade(player.score);
-                highscores.push({ rank: 0, username: currentUser, score: player.score, date: new Date().toISOString().split('T')[0], grade: userGrade });
-                if (socket) socket.emit('send_message', { username: 'SYSTEM ⚔️', message: `${currentUser} selesai bertanding dengan skor: ${player.score}!` });
-                
-                document.getElementById('back-home-btn').style.display = 'block';
-                document.getElementById('retreat-btn').style.display = 'none';
-            }
-        }
-
-        function playerMove(d) { player.pos.x += d; if (collide(arena, player)) player.pos.x -= d; }
-        function rotate(m, d) {
-            for (let y = 0; y < m.length; ++y) { for (let x = 0; x < y; ++x) { [m[x][y], m[y][x]] = [m[y][x], m[x][y]]; } }
-            if (d > 0) m.forEach(r => r.reverse()); else m.reverse();
-        }
-        function playerRotate(d) {
-            const pos = player.pos.x; let o = 1; rotate(player.matrix, d);
-            while (collide(arena, player)) { player.pos.x += o; o = -(o + (o > 0 ? 1 : -1)); if (o > player.matrix[0].length) { rotate(player.matrix, -d); player.pos.x = pos; return; } }
-        }
-
-        function handleContinuousInput() {
-            if (document.activeElement === document.getElementById('message-game')) return;
-            if (keyStates[37] && !moveTimers[37]) { playerMove(-1); moveTimers[37] = setTimeout(() => { moveTimers[37] = null; }, 90); }
-            if (keyStates[39] && !moveTimers[39]) { playerMove(1); moveTimers[39] = setTimeout(() => { moveTimers[39] = null; }, 90); }
-            if (keyStates[40] && !moveTimers[40]) { playerDrop(); moveTimers[40] = setTimeout(() => { moveTimers[40] = null; }, 50); }
-        }
-
-        document.addEventListener('keydown', e => {
-            if (!gameRunning || document.activeElement === document.getElementById('message-game')) return;
-            keyStates[e.keyCode] = true;
-            if (e.keyCode === 32) { e.preventDefault(); playerHardDrop(); }
-            else if (e.keyCode === 38 || e.keyCode === 87) { playerRotate(1); }
-            else if (e.keyCode === 67 || e.keyCode === 16) { playerHold(); }
+      // ── WEBSOCKET GABUNGAN UTUH ──────────────────────────────────────────
+      function escapeHtml(str) {
+        return str
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#039;");
+      }
+      function initializeSocketConnection() {
+        socket = io(window.location.origin, {
+          path: "/api/chat/socket.io",
+          auth: { token: accessToken },
         });
-        document.addEventListener('keyup', e => { keyStates[e.keyCode] = false; if (moveTimers[e.keyCode]) { clearTimeout(moveTimers[e.keyCode]); moveTimers[e.keyCode] = null; } });
 
-        function update(time = 0) {
-            if (gameRunning) {
-                const dt = time - lastTime; dropCounter += dt;
-                if (dropCounter > Math.max(70, dropInterval - (player.level - 1) * 130)) playerDrop();
-                handleContinuousInput();
+        socket.on("receive_message", (data) => {
+          const time = new Date(data.timestamp).toLocaleTimeString();
+          const safeUsername = escapeHtml(data.username);
+          const safeMessage = escapeHtml(data.message);
+          const cleanHTML = `[${time}] <span class="username">${safeUsername}</span>: ${safeMessage}`;
+
+          document.getElementById("chat-box-home").innerHTML +=
+            `<div class="msg-item">${cleanHTML}</div>`;
+
+          const gameChat = document.getElementById("chat-box-game");
+          gameChat.innerHTML += `<div class="msg-item">${cleanHTML}</div>`;
+          gameChat.scrollTop = gameChat.scrollHeight;
+        });
+
+        socket.on("match_found", (data) => {
+          currentRoomId = data.roomId;
+          opponentUser = data.opponent;
+
+          const matchBtn = document.getElementById("match-btn");
+          matchBtn.innerText = "CARI LAWAN TANDING ⚔️";
+          matchBtn.disabled = false;
+
+          alert(
+            `🎮 Lawan ditemukan! Anda akan bertanding melawan: ${opponentUser}`,
+          );
+          navigateTo("game-page");
+          startGame();
+        });
+
+        socket.on("enemy_board_update", (data) => {
+          if (data.username !== currentUser) {
+            enemyArena = data.arena;
+          }
+        });
+
+        socket.on("enemy_retreated", async (data) => {
+          // abaikan jika match sudah selesai
+          if (!gameRunning) return;
+          gameRunning = false;
+
+          player.score += 500;
+
+          try {
+            saveScore(player.score);
+            loadRankings();
+          } catch (err) {
+            console.error("Failed saving WO score:", err);
+          }
+
+          document.getElementById("score").innerText = player.score;
+
+          const userGrade = calculateGrade(player.score);
+
+          document.getElementById("result-title").innerText =
+            "🎉 YOU WIN! (Lawan WO)";
+          document.getElementById("result-title").style.color =
+            "var(--accent-cyan)";
+
+          document.getElementById("result-desc").innerHTML = `
+            Musuh (<strong>${data.username}</strong>) telah menyerah dari pertandingan.<br><br>
+            Skor Akhir Anda: <strong>${player.score}</strong> (${userGrade})
+        `;
+
+          document.getElementById("match-result-overlay").style.display =
+            "flex";
+        });
+      }
+
+      // ── LOGIKA AUTENTIKASI API GATEWAY ─────────────────────────────────────
+      async function handleAuthLogin() {
+        const email = document.getElementById("login-email").value.trim();
+        const password = document.getElementById("login-password").value.trim();
+
+        try {
+          const response = await fetch("/api/auth/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, password }),
+          });
+          const result = await response.json();
+
+          if (result.success) {
+            accessToken = result.data.accessToken;
+            currentUser = result.data.user.username;
+
+            localStorage.setItem("accessToken", accessToken);
+            localStorage.setItem("currentUser", currentUser);
+            document.getElementById("user-display-name").innerText =
+              currentUser;
+
+            initializeSocketConnection();
+            navigateTo("home-page");
+          } else {
+            alert("Gagal login: " + result.message);
+          }
+        } catch (err) {
+          alert("Koneksi gagal ke Auth Service API Gateway!");
+        }
+      }
+
+      async function handleAuthRegister() {
+        const username = document.getElementById("reg-username").value.trim();
+        const email = document.getElementById("reg-email").value.trim();
+        const password = document.getElementById("reg-password").value.trim();
+
+        if (!username || !email || !password) {
+          alert("Semua kolom registrasi wajib diisi!");
+          return;
+        }
+
+        try {
+          const response = await fetch("/api/auth/register", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ username, email, password }),
+          });
+          const result = await response.json();
+
+          if (result.success || response.status === 201 || result.id) {
+            alert("🎉 Registrasi berhasil! Silakan login.");
+            switchAuthTab("login");
+            document.getElementById("login-email").value = email;
+            document.getElementById("login-password").value = password;
+          } else {
+            alert(
+              "Gagal registrasi: " +
+                (result.message || "Periksa data Anda kembali."),
+            );
+          }
+        } catch (err) {
+          alert("Koneksi gagal ke Register Service API Gateway!");
+        }
+      }
+
+      function switchAuthTab(type) {
+        document.getElementById("form-login-container").style.display =
+          type === "login" ? "block" : "none";
+        document.getElementById("form-register-container").style.display =
+          type === "login" ? "none" : "block";
+        document.getElementById("tab-login-btn").style.color =
+          type === "login" ? "var(--accent-cyan)" : "var(--text-muted)";
+        document.getElementById("tab-register-btn").style.color =
+          type === "login" ? "var(--text-muted)" : "var(--accent-cyan)";
+      }
+
+      function logout() {
+        if (socket) socket.disconnect();
+
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("currentUser");
+
+        accessToken = null;
+        currentUser = null;
+
+        navigateTo("login-page");
+      }
+      function backToHome() {
+        gameRunning = false;
+        document.getElementById("back-home-btn").style.display = "none";
+        document.getElementById("start-btn").style.display = "block";
+        navigateTo("home-page");
+      }
+      function sendGlobalChat(inputId) {
+        const el = document.getElementById(inputId);
+        const msg = el.value.trim();
+        if (!msg || !socket) return;
+        socket.emit("send_message", { username: currentUser, message: msg });
+        el.value = "";
+      }
+      function handleGameChatKey(e) {
+        if (e.key === "Enter") sendGlobalChat("message-game");
+      }
+
+      function renderHighscores() {
+        const tbody = document.getElementById("highscore-list");
+        tbody.innerHTML = "";
+        highscores.sort((a, b) => b.score - a.score);
+        highscores.forEach((item, index) => {
+          tbody.innerHTML += `<tr><td>${index + 1}</td><td><span class="username">${item.username}</span></td><td><strong>${item.score.toLocaleString()}</strong> <small style="color:#ffcc00">(${item.grade})</small></td><td>${item.date}</td></tr>`;
+        });
+      }
+      function calculateGrade(score) {
+        let n = score / 50;
+        if (n >= 86) return "A"; // Mengikuti bobot acuan sistem [cite: 2025-10-03]
+        if (n >= 75) return "B"; // Mengikuti bobot acuan sistem [cite: 2025-10-03]
+        if (n >= 65) return "C"; // Mengikuti bobot acuan sistem [cite: 2025-10-03]
+        return "D";
+      }
+
+      // ── TETRIS CORE ENGINE GAMEPLAY ───────────────────────────────────────
+      const canvas = document.getElementById("tetris");
+      const context = canvas.getContext("2d");
+      context.scale(22, 22);
+
+      const nextCanvas = document.getElementById("next");
+      const nextContext = nextCanvas.getContext("2d");
+      nextContext.scale(17, 17);
+
+      const enemyCanvas = document.getElementById("enemy-tetris");
+      const enemyContext = enemyCanvas.getContext("2d");
+      enemyContext.scale(15, 15);
+
+      const colors = [
+        null,
+        "#FF0D72",
+        "#0DC2FF",
+        "#0DFF72",
+        "#F538FF",
+        "#FF8E0D",
+        "#FFE138",
+        "#3877FF",
+      ];
+      let arena = createMatrix(10, 20);
+      let enemyArena = createMatrix(10, 20);
+      let player = {
+        pos: { x: 0, y: 0 },
+        matrix: null,
+        nextMatrix: null,
+        holdMatrix: null,
+        hasHeld: false,
+        score: 0,
+        lines: 0,
+        level: 1,
+      };
+      let dropCounter = 0,
+        dropInterval = 1000,
+        lastTime = 0,
+        gameRunning = false,
+        keyStates = {},
+        moveTimers = {};
+
+      function createMatrix(w, h) {
+        const m = [];
+        while (h--) {
+          m.push(new Array(w).fill(0));
+        }
+        return m;
+      }
+      function createPiece(type) {
+        if (type === "T")
+          return [
+            [0, 0, 0],
+            [1, 1, 1],
+            [0, 1, 0],
+          ];
+        if (type === "O")
+          return [
+            [2, 2],
+            [2, 2],
+          ];
+        if (type === "L")
+          return [
+            [0, 3, 0],
+            [0, 3, 0],
+            [0, 3, 3],
+          ];
+        if (type === "J")
+          return [
+            [0, 4, 0],
+            [0, 4, 0],
+            [4, 4, 0],
+          ];
+        if (type === "I")
+          return [
+            [0, 0, 0, 0],
+            [5, 5, 5, 5],
+            [0, 0, 0, 0],
+            [0, 0, 0, 0],
+          ];
+        if (type === "S")
+          return [
+            [0, 6, 6],
+            [6, 6, 0],
+            [0, 0, 0],
+          ];
+        if (type === "Z")
+          return [
+            [7, 7, 0],
+            [0, 7, 7],
+            [0, 0, 0],
+          ];
+      }
+
+      function drawMatrix(matrix, offset, ctx, isGhost = false) {
+        matrix.forEach((row, y) => {
+          row.forEach((value, x) => {
+            if (value !== 0) {
+              ctx.fillStyle = isGhost
+                ? "rgba(255, 255, 255, 0.12)"
+                : colors[value];
+              ctx.fillRect(x + offset.x, y + offset.y, 1, 1);
+              ctx.lineWidth = 0.05;
+              ctx.strokeStyle = isGhost ? colors[value] : "#111";
+              ctx.strokeRect(x + offset.x, y + offset.y, 1, 1);
             }
-            lastTime = time; draw(); if (gameRunning) requestAnimationFrame(update);
+          });
+        });
+      }
+
+      function getGhostPosition() {
+        const g = { x: player.pos.x, y: player.pos.y };
+        while (!collide(arena, { pos: g, matrix: player.matrix })) {
+          g.y++;
+        }
+        g.y--;
+        return g;
+      }
+
+      function draw() {
+        context.fillStyle = "#111418";
+        context.fillRect(0, 0, canvas.width, canvas.height);
+        drawMatrix(arena, { x: 0, y: 0 }, context);
+        if (gameRunning) {
+          drawMatrix(player.matrix, getGhostPosition(), context, true);
+          drawMatrix(player.matrix, player.pos, context);
         }
 
-        function startGame() {
-            document.getElementById('start-btn').blur(); arena.forEach(r => r.fill(0)); enemyArena.forEach(r => r.fill(0));
-            player.score = 0; player.lines = 0; player.level = 1; player.holdMatrix = null;
-            document.getElementById('score').innerText = 0; document.getElementById('level').innerText = 1;
-            gameRunning = true; document.getElementById('retreat-btn').style.display = 'block'; document.getElementById('start-btn').style.display = 'none';
-            playerReset(); update();
-        }
+        enemyContext.fillStyle = "#111418";
+        enemyContext.fillRect(0, 0, enemyCanvas.width, enemyCanvas.height);
+        drawMatrix(enemyArena, { x: 0, y: 0 }, enemyContext);
 
-        function startMatchmaking() {
-            const btn = document.getElementById("match-btn"); btn.innerText = "Mencari Lawan... ⏳"; btn.disabled = true;
-            if (socket && socket.connected) { socket.emit("join_matchmaking", { username: currentUser }); }
-        }
+        nextContext.fillStyle = "#111418";
+        nextContext.fillRect(0, 0, nextCanvas.width, nextCanvas.height);
+        if (player.nextMatrix)
+          drawMatrix(player.nextMatrix, { x: 1, y: 1 }, nextContext);
 
-        function playerRetreat() {
-            if (!gameRunning || !currentRoomId) return;
-            if (confirm("Apakah Anda yakin ingin menyerah? 🏳️")) {
-                gameRunning = false; // Freeze gameplay lokal instan
-                socket.emit("player_retreat", { roomId: currentRoomId, username: currentUser });
-                
-                // Tampilkan Overlay Kekalahan untuk diri sendiri
-                document.getElementById("result-title").innerText = "🏳️ YOU RETREATED";
-                document.getElementById("result-title").style.color = "#e53e3e";
-                document.getElementById("result-desc").innerHTML = `
+        if (gameRunning && socket && socket.connected && currentRoomId) {
+          socket.emit("player_board_update", {
+            roomId: currentRoomId,
+            username: currentUser,
+            arena: arena,
+          });
+        }
+      }
+
+      function collide(a, p) {
+        const [m, o] = [p.matrix, p.pos];
+        for (let y = 0; y < m.length; ++y) {
+          for (let x = 0; x < m[y].length; ++x) {
+            if (m[y][x] !== 0 && (a[y + o.y] && a[y + o.y][x + o.x]) !== 0)
+              return true;
+          }
+        }
+        return false;
+      }
+
+      function merge(a, p) {
+        p.matrix.forEach((row, y) => {
+          row.forEach((val, x) => {
+            if (val !== 0) a[y + p.pos.y][x + p.pos.x] = val;
+          });
+        });
+      }
+      function playerDrop() {
+        player.pos.y++;
+        if (collide(arena, player)) {
+          player.pos.y--;
+          merge(arena, player);
+          playerReset();
+          arenaSweep();
+        }
+        dropCounter = 0;
+      }
+      function playerHardDrop() {
+        if (!gameRunning) return;
+        player.pos.y = getGhostPosition().y;
+        merge(arena, player);
+        playerReset();
+        arenaSweep();
+        dropCounter = 0;
+      }
+      function playerHold() {
+        if (!gameRunning || player.hasHeld) return;
+        if (!player.holdMatrix) {
+          player.holdMatrix = player.matrix;
+          playerReset();
+        } else {
+          const t = player.matrix;
+          player.matrix = player.holdMatrix;
+          player.holdMatrix = t;
+          player.pos.y = 0;
+          player.pos.x =
+            ((arena[0].length / 2) | 0) - ((player.matrix[0].length / 2) | 0);
+        }
+        player.hasHeld = true;
+      }
+
+      function arenaSweep() {
+        let rc = 1;
+        outer: for (let y = arena.length - 1; y > 0; --y) {
+          for (let x = 0; x < arena[y].length; ++x) {
+            if (arena[y][x] === 0) continue outer;
+          }
+          const row = arena.splice(y, 1)[0].fill(0);
+          arena.unshift(row);
+          ++y;
+          player.score += rc * 120;
+          player.lines++;
+          rc *= 2;
+          if (player.lines % 3 === 0) {
+            player.level++;
+          }
+        }
+        document.getElementById("score").innerText = player.score;
+        document.getElementById("level").innerText = player.level;
+      }
+
+      async function playerReset() {
+        const p = "ILJOTSZ";
+        player.matrix =
+          player.nextMatrix || createPiece(p[(p.length * Math.random()) | 0]);
+        player.nextMatrix = createPiece(p[(p.length * Math.random()) | 0]);
+        player.pos.y = 0;
+        player.pos.x =
+          ((arena[0].length / 2) | 0) - ((player.matrix[0].length / 2) | 0);
+        player.hasHeld = false;
+
+        if (collide(arena, player)) {
+          gameRunning = false;
+
+          // ✅ await saveScore dulu, baru navigateTo
+          await saveScore(player.score);
+
+          alert("💥 MATCH OVER! Score Anda: " + player.score);
+
+          navigateTo("home-page"); // loadRankings() dipanggil di sini, setelah save selesai
+
+          if (socket) {
+            socket.emit("send_message", {
+              username: "SYSTEM ⚔️",
+              message: `${currentUser} selesai bertanding dengan skor: ${player.score}!`,
+            });
+          }
+
+          document.getElementById("back-home-btn").style.display = "block";
+          document.getElementById("retreat-btn").style.display = "none";
+        }
+      }
+
+      function playerMove(d) {
+        player.pos.x += d;
+        if (collide(arena, player)) player.pos.x -= d;
+      }
+      function rotate(m, d) {
+        for (let y = 0; y < m.length; ++y) {
+          for (let x = 0; x < y; ++x) {
+            [m[x][y], m[y][x]] = [m[y][x], m[x][y]];
+          }
+        }
+        if (d > 0) m.forEach((r) => r.reverse());
+        else m.reverse();
+      }
+      function playerRotate(d) {
+        const pos = player.pos.x;
+        let o = 1;
+        rotate(player.matrix, d);
+        while (collide(arena, player)) {
+          player.pos.x += o;
+          o = -(o + (o > 0 ? 1 : -1));
+          if (o > player.matrix[0].length) {
+            rotate(player.matrix, -d);
+            player.pos.x = pos;
+            return;
+          }
+        }
+      }
+
+      function handleContinuousInput() {
+        if (document.activeElement === document.getElementById("message-game"))
+          return;
+        if (keyStates[37] && !moveTimers[37]) {
+          playerMove(-1);
+          moveTimers[37] = setTimeout(() => {
+            moveTimers[37] = null;
+          }, 90);
+        }
+        if (keyStates[39] && !moveTimers[39]) {
+          playerMove(1);
+          moveTimers[39] = setTimeout(() => {
+            moveTimers[39] = null;
+          }, 90);
+        }
+        if (keyStates[40] && !moveTimers[40]) {
+          playerDrop();
+          moveTimers[40] = setTimeout(() => {
+            moveTimers[40] = null;
+          }, 50);
+        }
+      }
+
+      document.addEventListener("keydown", (e) => {
+        if (
+          !gameRunning ||
+          document.activeElement === document.getElementById("message-game")
+        )
+          return;
+        keyStates[e.keyCode] = true;
+        if (e.keyCode === 32) {
+          e.preventDefault();
+          playerHardDrop();
+        } else if (e.keyCode === 38 || e.keyCode === 87) {
+          playerRotate(1);
+        } else if (e.keyCode === 67 || e.keyCode === 16) {
+          playerHold();
+        }
+      });
+      document.addEventListener("keyup", (e) => {
+        keyStates[e.keyCode] = false;
+        if (moveTimers[e.keyCode]) {
+          clearTimeout(moveTimers[e.keyCode]);
+          moveTimers[e.keyCode] = null;
+        }
+      });
+
+      function update(time = 0) {
+        if (gameRunning) {
+          const dt = time - lastTime;
+          dropCounter += dt;
+          if (
+            dropCounter > Math.max(70, dropInterval - (player.level - 1) * 130)
+          )
+            playerDrop();
+          handleContinuousInput();
+        }
+        lastTime = time;
+        draw();
+        if (gameRunning) requestAnimationFrame(update);
+      }
+
+      function startGame() {
+        document.getElementById("start-btn").blur();
+        arena.forEach((r) => r.fill(0));
+        enemyArena.forEach((r) => r.fill(0));
+        player.score = 0;
+        player.lines = 0;
+        player.level = 1;
+        player.holdMatrix = null;
+        document.getElementById("score").innerText = 0;
+        document.getElementById("level").innerText = 1;
+        gameRunning = true;
+        document.getElementById("retreat-btn").style.display = "block";
+        document.getElementById("start-btn").style.display = "none";
+        playerReset();
+        update();
+      }
+
+      function startMatchmaking() {
+        const btn = document.getElementById("match-btn");
+        btn.innerText = "Mencari Lawan... ⏳";
+        btn.disabled = true;
+        if (socket && socket.connected) {
+          socket.emit("join_matchmaking", { username: currentUser });
+        }
+      }
+
+      function playerRetreat() {
+        if (!gameRunning || !currentRoomId) return;
+        if (confirm("Apakah Anda yakin ingin menyerah? 🏳️")) {
+          gameRunning = false; // Freeze gameplay lokal instan
+          socket.emit("player_retreat", {
+            roomId: currentRoomId,
+            username: currentUser,
+          });
+
+          // Tampilkan Overlay Kekalahan untuk diri sendiri
+          document.getElementById("result-title").innerText =
+            "🏳️ YOU RETREATED";
+          document.getElementById("result-title").style.color = "#e53e3e";
+          document.getElementById("result-desc").innerHTML = `
                     Anda memilih keluar dari arena pertandingan.<br><br>
                     Skor Terakhir: <strong>${player.score}</strong>
                 `;
-                document.getElementById("match-result-overlay").style.display = "flex";
-            }
+          document.getElementById("match-result-overlay").style.display =
+            "flex";
         }
+      }
 
-        function closeResultAndGoHome() {
-            document.getElementById("match-result-overlay").style.display = "none";
-            document.getElementById('retreat-btn').style.display = 'none';
-            document.getElementById('start-btn').style.display = 'block';
-            currentRoomId = null;
-            navigateTo("home-page"); // Pulang ke beranda, otomatis render poin baru
+      function closeResultAndGoHome() {
+        document.getElementById("match-result-overlay").style.display = "none";
+        document.getElementById("retreat-btn").style.display = "none";
+        document.getElementById("start-btn").style.display = "block";
+        currentRoomId = null;
+        navigateTo("home-page"); // Pulang ke beranda, otomatis render poin baru
+      }
+
+      window.addEventListener("load", () => {
+        const savedToken = localStorage.getItem("accessToken");
+        const savedUser = localStorage.getItem("currentUser");
+
+        if (savedToken && savedUser) {
+          accessToken = savedToken;
+          currentUser = savedUser;
+
+          document.getElementById("user-display-name").innerText = currentUser;
+
+          initializeSocketConnection();
+          navigateTo("home-page");
         }
+      });
     </script>
-</body>
+  </body>
 </html>
