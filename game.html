@@ -1,584 +1,963 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <title>Tetris 1v1 Multiplayer Arena</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
     <style>
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+
       :root {
-        --bg-dark: #0c0f12;
-        --panel-bg: #1a1f26;
-        --accent-cyan: #00ffcc;
-        --border-color: #2d3748;
-        --text-muted: #a0aec0;
+        /* Premium Dark Color Palette */
+        --bg-primary: #0b0d12;
+        --bg-secondary: #13161f;
+        --surface: #1e222d;
+        --surface-hover: #2a2f3d;
+        --text-primary: #f8fafc;
+        --text-secondary: #94a3b8;
+        --text-tertiary: #64748b;
+        --border-color: #2e3646;
+        
+        /* Accents */
+        --accent-primary: #3b82f6;   /* Blue */
+        --accent-primary-hover: #60a5fa;
+        --accent-success: #10b981;   /* Emerald */
+        --accent-success-hover: #34d399;
+        --accent-danger: #ef4444;    /* Red */
+        --accent-danger-hover: #f87171;
+        --accent-warning: #f59e0b;   /* Amber */
+        
+        /* Controlled Neon Effect */
+        --neon-glow-primary: 0 0 15px rgba(59, 130, 246, 0.4);
+        --neon-glow-success: 0 0 15px rgba(16, 185, 129, 0.4);
+        --neon-glow-danger: 0 0 15px rgba(239, 68, 68, 0.4);
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
       }
 
       body {
-        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-        background: var(--bg-dark);
-        color: #fff;
-        margin: 0;
-        padding: 20px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        background: var(--bg-primary);
+        color: var(--text-primary);
+        line-height: 1.5;
+        background-image: 
+          radial-gradient(circle at 15% 50%, rgba(59, 130, 246, 0.05), transparent 25%),
+          radial-gradient(circle at 85% 30%, rgba(16, 185, 129, 0.05), transparent 25%);
+        min-height: 100vh;
       }
 
-      /* ── UTILITY CLASSES FOR PAGES ── */
+      /* ── SCROLLBAR ── */
+      ::-webkit-scrollbar { width: 6px; }
+      ::-webkit-scrollbar-track { background: transparent; }
+      ::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 4px; }
+      ::-webkit-scrollbar-thumb:hover { background: var(--text-tertiary); }
+
+      /* ── TOAST NOTIFICATIONS (CUSTOM ALERTS) ── */
+      .toast-container {
+        position: fixed;
+        top: 24px;
+        right: 24px;
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        pointer-events: none;
+      }
+      
+      .toast {
+        background: var(--surface);
+        border-left: 4px solid var(--accent-primary);
+        color: var(--text-primary);
+        padding: 16px 20px;
+        border-radius: 8px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-width: 300px;
+        font-size: 14px;
+        font-weight: 500;
+        animation: slideInRight 0.3s ease forwards;
+        pointer-events: auto;
+      }
+      
+      .toast.error { border-left-color: var(--accent-danger); }
+      .toast.error i { color: var(--accent-danger); font-size: 18px; }
+      
+      .toast.success { border-left-color: var(--accent-success); }
+      .toast.success i { color: var(--accent-success); font-size: 18px; }
+      
+      .toast.fadeOut { animation: fadeOutRight 0.3s ease forwards; }
+      
+      @keyframes slideInRight {
+        from { transform: translateX(100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+      }
+      @keyframes fadeOutRight {
+        from { transform: translateX(0); opacity: 1; }
+        to { transform: translateX(100%); opacity: 0; }
+      }
+
+      /* ── MAIN LAYOUT ── */
       .page {
         display: none;
-        width: 900px;
-        box-sizing: border-box;
+        animation: fadeIn 0.4s ease-out;
+        max-width: 1050px;
+        margin: 0 auto;
+        padding: 30px 20px;
       }
       .page.active {
         display: flex;
         flex-direction: column;
       }
 
+      @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+
+      /* ── BUTTONS ── */
       .btn {
-        padding: 10px 20px;
+        padding: 12px 24px;
         border: none;
-        border-radius: 6px;
-        font-weight: bold;
-        cursor: pointer;
-        transition: 0.2s;
-      }
-      .btn-primary {
-        background: #007acc;
-        color: white;
-      }
-      .btn-primary:hover {
-        background: #005999;
-      }
-      .btn-success {
-        background: #28a745;
-        color: white;
-      }
-      .btn-success:hover {
-        background: #218838;
-      }
-      .btn-danger {
-        background: #e53e3e;
-        color: white;
-      }
-      .btn-danger:hover {
-        background: #c53030;
-      }
-
-      input {
-        padding: 12px;
-        border-radius: 6px;
-        border: 1px solid #4a5568;
-        background: #2d3748;
-        color: #fff;
+        border-radius: 8px;
+        font-weight: 600;
         font-size: 14px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        text-decoration: none;
+        letter-spacing: 0.5px;
       }
 
-      #login-page {
-        max-width: 400px;
-        margin: 100px auto 0 auto;
-        background: var(--panel-bg);
-        padding: 30px;
+      .btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        box-shadow: none !important;
+      }
+
+      .btn-primary { background: var(--accent-primary); color: white; }
+      .btn-primary:hover:not(:disabled) {
+        background: var(--accent-primary-hover);
+        box-shadow: var(--neon-glow-primary);
+      }
+
+      .btn-success { background: var(--accent-success); color: white; }
+      .btn-success:hover:not(:disabled) {
+        background: var(--accent-success-hover);
+        box-shadow: var(--neon-glow-success);
+      }
+
+      .btn-danger { background: rgba(239, 68, 68, 0.1); color: var(--accent-danger); border: 1px solid rgba(239, 68, 68, 0.3); }
+      .btn-danger:hover:not(:disabled) { background: var(--accent-danger); color: white; box-shadow: var(--neon-glow-danger); }
+      
+      .btn-secondary { background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border-color); }
+      .btn-secondary:hover:not(:disabled) { background: var(--surface-hover); }
+
+      /* ── FORM ELEMENTS ── */
+      input {
+        padding: 12px 16px;
+        border-radius: 8px;
+        border: 1px solid var(--border-color);
+        background: var(--bg-secondary);
+        color: var(--text-primary);
+        font-size: 14px;
+        transition: all 0.3s ease;
+        font-family: inherit;
+      }
+
+      input:focus {
+        outline: none;
+        border-color: var(--accent-primary);
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+      }
+
+      input::placeholder { color: var(--text-tertiary); }
+      label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 500;
+        font-size: 13px;
+        color: var(--text-secondary);
+      }
+
+      /* ── PANELS & SURFACES ── */
+      .panel {
+        background: var(--surface);
         border-radius: 12px;
         border: 1px solid var(--border-color);
-        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+        padding: 24px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        display: flex;
+        flex-direction: column;
       }
+
+      .panel h3, .chat-section h4 {
+        font-size: 13px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: var(--text-secondary);
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      /* ── LOGIN PAGE ── */
+      #login-page {
+        max-width: 440px;
+        margin: 80px auto 0;
+        background: var(--surface);
+        padding: 40px;
+        border-radius: 16px;
+        border: 1px solid var(--border-color);
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+      }
+
+      .login-tabs {
+        display: flex;
+        gap: 0;
+        margin-bottom: 32px;
+        border-bottom: 1px solid var(--border-color);
+      }
+
+      .login-tab {
+        flex: 1;
+        padding: 12px 16px;
+        border: none;
+        background: none;
+        color: var(--text-secondary);
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border-bottom: 2px solid transparent;
+      }
+
+      .login-tab.active {
+        color: var(--accent-primary);
+        border-bottom-color: var(--accent-primary);
+      }
+
       #login-page h2 {
-        margin-top: 0;
-        color: var(--accent-cyan);
-        text-align: center;
+        margin-bottom: 24px;
+        font-size: 26px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        justify-content: center;
       }
+
       .form-group {
         display: flex;
         flex-direction: column;
-        gap: 10px;
-        margin-bottom: 15px;
+        margin-bottom: 20px;
       }
 
-      .welcome-header {
+      /* ── HOME PAGE ── */
+      .header-bar {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        background: var(--panel-bg);
-        padding: 15px 20px;
-        border-radius: 10px;
-        border: 1px solid var(--border-color);
-        margin-bottom: 20px;
-      }
-      .home-grid {
-        display: flex;
-        gap: 20px;
-        height: 450px;
-      }
-      .menu-panel {
-        width: 35%;
-        background: var(--panel-bg);
+        background: var(--surface);
+        padding: 20px 24px;
         border-radius: 12px;
         border: 1px solid var(--border-color);
-        padding: 20px;
+        margin-bottom: 24px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      }
+
+      .header-bar h1 {
+        font-size: 20px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .home-grid {
+        display: grid;
+        grid-template-columns: 360px 1fr;
+        gap: 24px;
+        align-items: start;
+      }
+
+      .chat-info {
+        font-size: 13px;
+        color: var(--text-tertiary);
+        margin: 16px 0;
+        text-align: center;
+      }
+
+      /* Leaderboard Scrolling Area */
+      .leaderboard-panel {
+        height: 494px; 
         display: flex;
         flex-direction: column;
-        gap: 15px;
       }
-      .highscore-box {
-        width: 65%;
-        background: var(--panel-bg);
-        border-radius: 12px;
-        border: 1px solid var(--border-color);
-        padding: 20px;
-        box-sizing: border-box;
+      
+      .table-wrapper {
+        flex: 1;
+        overflow-y: auto;
+        padding-right: 8px;
       }
-      .highscore-table {
+
+      .leaderboard-table {
         width: 100%;
         border-collapse: collapse;
-        margin-top: 15px;
-        text-align: left;
       }
-      .highscore-table th,
-      .highscore-table td {
-        padding: 12px;
+
+      .leaderboard-table th {
+        text-align: left;
+        padding: 14px 12px;
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--text-secondary);
+        border-bottom: 1px solid var(--border-color);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        position: sticky;
+        top: 0;
+        background: var(--surface);
+        z-index: 10;
+      }
+
+      .leaderboard-table td {
+        padding: 14px 12px;
+        font-size: 14px;
         border-bottom: 1px solid var(--border-color);
       }
-      .highscore-table th {
-        color: var(--text-muted);
-      }
-      .highscore-table tr:hover {
+
+      .leaderboard-table tr:hover td {
         background: rgba(255, 255, 255, 0.02);
       }
 
-      .arena-container {
-        display: flex;
-        gap: 20px;
-        height: 530px;
-      }
-      .battlefields {
-        display: flex;
-        background: var(--panel-bg);
-        padding: 15px;
-        border-radius: 12px;
-        border: 1px solid var(--border-color);
-        gap: 20px;
+      .rank-badge {
+        display: inline-flex;
         align-items: center;
-      }
-      .screen-label {
-        text-align: center;
-        margin-bottom: 5px;
-        font-size: 12px;
-        font-weight: bold;
-        color: var(--text-muted);
-        text-transform: uppercase;
-      }
-      canvas {
-        background: #111418;
-        border: 2px solid #4a5568;
+        justify-content: center;
+        width: 26px;
+        height: 26px;
         border-radius: 6px;
-      }
-      canvas#enemy-tetris {
-        background: #111418;
-        border: 2px dashed #e53e3e;
-        opacity: 0.8;
+        background: var(--bg-secondary);
+        color: var(--text-primary);
+        font-size: 12px;
+        font-weight: 700;
       }
 
-      .game-controls {
+      .rank-badge.gold { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
+      .rank-badge.silver { background: rgba(148, 163, 184, 0.15); color: #cbd5e1; border: 1px solid rgba(148, 163, 184, 0.3); }
+      .rank-badge.bronze { background: rgba(180, 83, 9, 0.15); color: #d97706; border: 1px solid rgba(180, 83, 9, 0.3); }
+
+      /* ── GAME PAGE ── */
+      .game-header {
         display: flex;
-        flex-direction: column;
         justify-content: space-between;
-        height: 440px;
-        width: 110px;
+        align-items: center;
+        margin-bottom: 24px;
+        padding: 20px 24px;
+        background: var(--surface);
+        border-radius: 12px;
+        border: 1px solid var(--border-color);
       }
-      .stats-group {
+
+      .game-header h2 {
+        font-size: 18px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .game-container {
+        display: grid;
+        grid-template-columns: 1fr auto 1fr;
+        gap: 24px;
+        margin-bottom: 24px;
+        align-items: start;
+      }
+
+      .battlefield {
+        background: var(--surface);
+        border-radius: 12px;
+        border: 1px solid var(--border-color);
+        padding: 24px;
         display: flex;
         flex-direction: column;
+        align-items: center;
+      }
+
+      .screen-label {
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 16px;
+        background: var(--bg-secondary);
+        border-radius: 20px;
+        border: 1px solid var(--border-color);
+      }
+
+      canvas {
+        background: #0f1115;
+        border: 2px solid var(--border-color);
+        border-radius: 8px;
+        display: block;
+        box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
+      }
+
+      canvas#enemy-tetris {
+        opacity: 0.8;
+        border-color: rgba(239, 68, 68, 0.3);
+      }
+
+      .game-sidebar {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        width: 140px;
+      }
+
+      .stat-card {
+        background: var(--surface);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 16px;
+        text-align: center;
+      }
+
+      .stat-label {
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: var(--text-secondary);
+        margin-bottom: 8px;
+      }
+
+      .stat-value {
+        font-size: 26px;
+        font-weight: 800;
+        color: var(--accent-primary);
+      }
+
+      /* ── CHAT SYSTEM ── */
+      .chat-section {
+        background: var(--surface);
+        border-radius: 12px;
+        border: 1px solid var(--border-color);
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .chat-section.game-chat { height: 260px; }
+      .chat-section.home-chat { height: 260px; }
+
+      .chat-box {
+        flex: 1; 
+        overflow-y: auto;
+        min-height: 120px; 
+        margin-bottom: 16px;
+        padding: 12px;
+        background: var(--bg-primary);
+        border-radius: 8px;
+        border: 1px solid var(--border-color);
+        font-size: 13px;
+      }
+
+      .chat-message {
+        margin-bottom: 10px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid var(--border-color);
+        line-height: 1.6;
+      }
+      .chat-message:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+        padding-bottom: 0;
+      }
+
+      .chat-username {
+        font-weight: 600;
+        color: var(--accent-primary);
+        margin-right: 6px;
+      }
+
+      .chat-input-group {
+        display: flex;
         gap: 8px;
       }
-      .mini-box {
-        background: #2d3748;
-        padding: 6px;
-        border-radius: 4px;
-        text-align: center;
-        font-size: 12px;
-      }
-      .mini-box div {
-        font-size: 16px;
-        font-weight: bold;
-        color: var(--accent-cyan);
-      }
-      .mini-box h3 {
-        margin: 0 0 4px 0;
-        font-size: 12px;
-        color: var(--text-muted);
-      }
+      .chat-input-group input { flex: 1; }
 
-      .chat-sidebar {
-        flex-grow: 1;
-        display: flex;
-        flex-direction: column;
-        background: var(--panel-bg);
-        border-radius: 12px;
-        border: 1px solid var(--border-color);
-        padding: 15px;
-        box-sizing: border-box;
-      }
-      .chat-box-area {
-        flex-grow: 1;
-        background: #111418;
-        border: 1px solid var(--border-color);
-        overflow-y: auto;
-        padding: 10px;
-        margin-bottom: 10px;
-        border-radius: 6px;
-        font-size: 13px;
-      }
-      .chat-input-zone {
-        display: flex;
-        gap: 5px;
-      }
-      .chat-input-zone input {
-        flex-grow: 1;
-        padding: 8px;
-      }
-      .msg-item {
-        margin-bottom: 5px;
-        font-size: 13px;
-        border-bottom: 1px solid #232934;
-        padding-bottom: 3px;
-      }
-      .username {
-        color: var(--accent-cyan);
-        font-weight: bold;
-      }
-    </style>
-    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
-  </head>
-  <body>
-    <div
-      id="match-result-overlay"
-      style="
+      /* ── MODALS & OVERLAYS ── */
+      .modal-overlay {
         display: none;
         position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.85);
+        top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0, 0, 0, 0.75);
+        backdrop-filter: blur(5px);
         z-index: 999;
-        flex-direction: column;
-        justify-content: center;
         align-items: center;
-      "
-    >
-      <div
-        style="
-          background: var(--panel-bg);
-          padding: 40px;
-          border-radius: 15px;
-          border: 2px solid var(--accent-cyan);
-          text-align: center;
-          max-width: 400px;
-          box-shadow: 0 0 20px rgba(0, 255, 204, 0.3);
-        "
-      >
-        <h2
-          id="result-title"
-          style="color: #ffcc00; margin-top: 0; font-size: 28px"
-        >
-          👑 MATCH FINISHED
-        </h2>
-        <p
-          id="result-desc"
-          style="font-size: 16px; margin: 20px 0; color: #fff"
-        ></p>
-        <button
-          class="btn btn-primary"
-          style="width: 100%; font-size: 16px; padding: 12px"
-          onclick="closeResultAndGoHome()"
-        >
-          KEMBALI KE BERANDA 🏠
+        justify-content: center;
+      }
+      .modal-overlay.active { display: flex; animation: fadeIn 0.2s ease-in; }
+
+      .modal-content {
+        background: var(--surface);
+        border-radius: 16px;
+        border: 1px solid var(--border-color);
+        padding: 32px;
+        max-width: 480px;
+        width: 90%;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+      }
+
+      .modal-content h2 {
+        margin-bottom: 24px;
+        font-size: 22px;
+        color: var(--text-primary);
+        text-align: center;
+      }
+
+      .modal-content ul {
+        list-style: none;
+        margin: 24px 0;
+        background: var(--bg-primary);
+        border-radius: 12px;
+        padding: 16px;
+        border: 1px solid var(--border-color);
+      }
+
+      .modal-content li {
+        padding: 12px 0;
+        border-bottom: 1px solid var(--border-color);
+        font-size: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .modal-content li:last-child { border-bottom: none; }
+
+      .key-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(255, 255, 255, 0.1);
+        color: var(--text-primary);
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 700;
+        margin: 0 4px;
+        min-width: 32px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+      }
+
+      .result-card {
+        background: var(--surface);
+        border-radius: 16px;
+        border: 1px solid var(--border-color);
+        padding: 40px;
+        text-align: center;
+        max-width: 440px;
+        width: 90%;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+      }
+      .result-card h2 { font-size: 26px; margin-bottom: 12px; }
+      .result-card p { font-size: 15px; color: var(--text-secondary); margin: 20px 0; }
+
+      /* ── RETREAT CONFIRM MODAL ── */
+      .retreat-card {
+        background: var(--surface);
+        border-radius: 16px;
+        border: 1px solid var(--border-color);
+        padding: 40px;
+        text-align: center;
+        max-width: 440px;
+        width: 90%;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+      }
+      .retreat-card h2 {
+        font-size: 24px;
+        margin-bottom: 16px;
+        color: var(--text-primary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+      }
+      .retreat-card p {
+        font-size: 15px;
+        color: var(--text-secondary);
+        margin-bottom: 30px;
+      }
+      .retreat-buttons {
+        display: flex;
+        gap: 12px;
+        justify-content: center;
+      }
+
+      /* ── MATCH FOUND ANIMATED MODAL ── */
+      .match-found-card {
+        background: var(--surface);
+        border-radius: 16px;
+        border: 2px solid var(--accent-primary);
+        padding: 40px;
+        text-align: center;
+        width: 90%;
+        max-width: 500px;
+        box-shadow: 0 0 40px rgba(59, 130, 246, 0.3);
+        animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      }
+      
+      @keyframes popIn {
+        0% { transform: scale(0.8); opacity: 0; }
+        100% { transform: scale(1); opacity: 1; }
+      }
+
+      .pulse-text {
+        font-size: 32px;
+        font-weight: 900;
+        color: var(--text-primary);
+        margin-bottom: 30px;
+        text-shadow: 0 0 10px rgba(255,255,255,0.4);
+        animation: pulseOpacity 1s infinite alternate;
+        letter-spacing: 2px;
+      }
+      
+      @keyframes pulseOpacity {
+        from { opacity: 0.8; text-shadow: 0 0 8px rgba(255,255,255,0.2); }
+        to { opacity: 1; text-shadow: 0 0 18px rgba(255,255,255,0.8); }
+      }
+
+      .vs-container {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 30px;
+        background: var(--bg-secondary);
+        padding: 24px;
+        border-radius: 12px;
+        position: relative;
+        border: 1px solid var(--border-color);
+      }
+
+      .player-side, .enemy-side {
+        font-size: 22px;
+        font-weight: 800;
+        flex: 1;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .player-side { color: var(--accent-primary); text-shadow: var(--neon-glow-primary); }
+      .enemy-side { color: var(--accent-danger); text-shadow: var(--neon-glow-danger); }
+
+      .vs-badge {
+        background: var(--bg-primary);
+        color: var(--accent-warning);
+        font-size: 24px;
+        font-weight: 900;
+        font-style: italic;
+        padding: 10px 16px;
+        border-radius: 50%;
+        border: 2px solid var(--accent-warning);
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+        box-shadow: 0 0 20px rgba(245, 158, 11, 0.4);
+        z-index: 2;
+      }
+
+      .mf-timer-text {
+        font-size: 15px;
+        color: var(--text-secondary);
+      }
+      
+      .mf-timer-text span {
+        font-weight: 800;
+        color: var(--text-primary);
+        font-size: 22px;
+        margin-left: 6px;
+      }
+
+      @media (max-width: 768px) {
+        .home-grid, .game-container { grid-template-columns: 1fr; }
+        .game-sidebar { width: 100%; flex-direction: row; flex-wrap: wrap; justify-content: center; }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- TOAST CONTAINER UTK CUSTOM POPUP ALERTS -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- Instructions Modal -->
+    <div id="instructions-modal" class="modal-overlay">
+      <div class="modal-content">
+        <h2><i class="fas fa-gamepad"></i> Controls</h2>
+        <ul>
+          <li><span>Rotate Piece</span> <div><span class="key-badge">W</span> or <span class="key-badge">↑</span></div></li>
+          <li><span>Move Left</span> <div><span class="key-badge">A</span> or <span class="key-badge">←</span></div></li>
+          <li><span>Move Right</span> <div><span class="key-badge">D</span> or <span class="key-badge">→</span></div></li>
+          <li><span>Soft Drop</span> <div><span class="key-badge">S</span> or <span class="key-badge">↓</span></div></li>
+          <li><span>Hard Drop</span> <div><span class="key-badge">SPACE</span></div></li>
+          <li><span>Hold Piece</span> <div><span class="key-badge">C</span></div></li>
+        </ul>
+        <button class="btn btn-primary" style="width: 100%" onclick="document.getElementById('instructions-modal').classList.remove('active')">
+          <i class="fas fa-check"></i> Understood
         </button>
       </div>
     </div>
 
+    <!-- Match Found Animated Modal -->
+    <div id="match-found-overlay" class="modal-overlay">
+      <div class="match-found-card">
+        <h2 class="pulse-text">MATCH FOUND!</h2>
+        <div class="vs-container">
+          <div class="player-side" id="mf-player">Player 1</div>
+          <div class="vs-badge">VS</div>
+          <div class="enemy-side" id="mf-enemy">Player 2</div>
+        </div>
+        <p class="mf-timer-text">Arena opening in <span id="mf-countdown">3</span></p>
+      </div>
+    </div>
+
+    <!-- Match Result Modal -->
+    <div id="match-result-overlay" class="modal-overlay">
+      <div class="result-card">
+        <h2 id="result-title"><i class="fas fa-trophy"></i> Match Finished</h2>
+        <p id="result-desc"></p>
+        <button class="btn btn-primary" style="width: 100%" onclick="closeResultAndGoHome()">
+          <i class="fas fa-home"></i> Back to Home
+        </button>
+      </div>
+    </div>
+
+    <!-- Retreat Confirm Modal -->
+    <div id="retreat-confirm-overlay" class="modal-overlay">
+      <div class="retreat-card">
+        <h2><i class="fas fa-flag" style="color: var(--accent-danger)"></i> Retreat Match?</h2>
+        <p>Are you sure you want to surrender? Your current score will be recorded as your final score.</p>
+        <div class="retreat-buttons">
+          <button class="btn btn-secondary" onclick="document.getElementById('retreat-confirm-overlay').classList.remove('active')">Cancel</button>
+          <button class="btn btn-danger" onclick="executeRetreat()">Yes, Retreat</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Login Page -->
     <div id="login-page" class="page active">
-      <div
-        style="
-          display: flex;
-          justify-content: space-around;
-          margin-bottom: 20px;
-          border-bottom: 2px solid var(--border-color);
-        "
-      >
-        <h3
-          id="tab-login-btn"
-          style="
-            color: var(--accent-cyan);
-            cursor: pointer;
-            margin: 0;
-            padding-bottom: 10px;
-          "
-          onclick="switchAuthTab('login')"
-        >
-          LOGIN
-        </h3>
-        <h3
-          id="tab-register-btn"
-          style="
-            color: var(--text-muted);
-            cursor: pointer;
-            margin: 0;
-            padding-bottom: 10px;
-          "
-          onclick="switchAuthTab('register')"
-        >
-          REGISTER
-        </h3>
+      <div class="login-tabs">
+        <button class="login-tab active" id="tab-login-btn" onclick="switchAuthTab('login')">Sign In</button>
+        <button class="login-tab" id="tab-register-btn" onclick="switchAuthTab('register')">Register</button>
       </div>
 
       <div id="form-login-container">
-        <h2>Tetris Gateway Login</h2>
+        <h2><i class="fas fa-cube" style="color: var(--accent-primary)"></i> Welcome Back</h2>
         <div class="form-group">
           <label>Email Address</label>
-          <input
-            type="text"
-            id="login-email"
-            placeholder="Masukkan email..."
-            value=""
-          />
+          <input type="text" id="login-email" placeholder="Enter your email" />
         </div>
         <div class="form-group">
           <label>Password</label>
-          <input
-            type="password"
-            id="login-password"
-            placeholder="Masukkan password..."
-            value=""
-          />
+          <input type="password" id="login-password" placeholder="Enter your password" />
         </div>
-        <button
-          class="btn btn-primary"
-          style="width: 100%; margin-top: 10px"
-          onclick="handleAuthLogin()"
-        >
-          MASUK SYSTEM 🔐
+        <button class="btn btn-primary" style="width: 100%; margin-top: 10px;" onclick="handleAuthLogin()">
+          Login to System
         </button>
       </div>
 
       <div id="form-register-container" style="display: none">
-        <h2>Create New Account</h2>
+        <h2><i class="fas fa-cube" style="color: var(--accent-success)"></i> Create Account</h2>
         <div class="form-group">
           <label>Username</label>
-          <input
-            type="text"
-            id="reg-username"
-            placeholder="Pilih username unik..."
-          />
+          <input type="text" id="reg-username" placeholder="Choose a username" />
         </div>
         <div class="form-group">
           <label>Email Address</label>
-          <input
-            type="text"
-            id="reg-email"
-            placeholder="Masukkan email aktif..."
-          />
+          <input type="text" id="reg-email" placeholder="Enter active email" />
         </div>
         <div class="form-group">
           <label>Password</label>
-          <input
-            type="password"
-            id="reg-password"
-            placeholder="Buat password aman..."
-          />
+          <input type="password" id="reg-password" placeholder="Create a strong password" />
         </div>
-        <button
-          class="btn btn-success"
-          style="width: 100%; margin-top: 10px"
-          onclick="handleAuthRegister()"
-        >
-          DAFTAR AKUN 🚀
+        <button class="btn btn-success" style="width: 100%; margin-top: 10px;" onclick="handleAuthRegister()">
+          Register Account
         </button>
       </div>
     </div>
 
+    <!-- Home Page -->
     <div id="home-page" class="page">
-      <div class="welcome-header">
-        <div>
-          Selamat Datang,
-          <span
-            id="user-display-name"
-            style="color: var(--accent-cyan); font-weight: bold"
-            >Player</span
-          >!
-        </div>
-        <button class="btn btn-danger" onclick="logout()">Logout</button>
+      <div class="header-bar">
+        <h1>
+          <i class="fas fa-cube" style="color: var(--accent-primary)"></i> 
+          Welcome, <span id="user-display-name" style="color: var(--accent-primary);">Player</span>
+        </h1>
+        <button class="btn btn-secondary" style="color: var(--accent-danger); border-color: rgba(239, 68, 68, 0.3)" onclick="logout()">
+          <i class="fas fa-sign-out-alt"></i> Logout
+        </button>
       </div>
 
       <div class="home-grid">
-        <div class="menu-panel">
-          <h3 style="margin: 0; color: var(--text-muted)">MENU UTAMA</h3>
-          <button
-            class="btn btn-success"
-            id="match-btn"
-            style="font-size: 16px; padding: 15px"
-            onclick="startMatchmaking()"
-          >
-            CARI LAWAN TANDING ⚔️
-          </button>
-          <p
-            style="
-              font-size: 12px;
-              color: var(--text-muted);
-              text-align: center;
-              margin: 0;
-            "
-          >
-            Atau nikmati interaksi obrolan global sebelum bertanding.
-          </p>
-
-          <div
-            class="chat-sidebar"
-            style="
-              height: 100%;
-              padding: 0;
-              background: transparent;
-              border: none;
-            "
-          >
-            <div
-              id="chat-box-home"
-              class="chat-box-area"
-              style="height: 180px"
-            ></div>
-            <div class="chat-input-zone">
-              <input
-                type="text"
-                id="message-home"
-                placeholder="Ketik pesan di beranda..."
-              />
-              <button
-                class="btn btn-primary"
-                onclick="sendGlobalChat('message-home')"
-              >
-                Kirim
+        <div style="display: flex; flex-direction: column; gap: 24px;">
+          <!-- Matchmaking Panel -->
+          <div class="panel">
+            <h3><i class="fas fa-crosshairs"></i> Matchmaking</h3>
+            <button class="btn btn-success" id="match-btn" style="width: 100%; padding: 16px; font-size: 15px;" onclick="toggleMatchmaking()">
+              <i class="fas fa-play"></i> Find Opponent
+            </button>
+            <p class="chat-info">Connect with other players and compete in real-time matches.</p>
+          </div>
+          
+          <!-- Home Chat Panel -->
+          <div class="chat-section home-chat">
+            <h4><i class="fas fa-comments"></i> Global Hub</h4>
+            <div id="chat-box-home" class="chat-box"></div>
+            <div class="chat-input-group">
+              <input type="text" id="message-home" placeholder="Type a message..." onkeypress="if(event.key === 'Enter') sendGlobalChat('message-home')" />
+              <button class="btn btn-primary" onclick="sendGlobalChat('message-home')">
+                <i class="fas fa-paper-plane"></i>
               </button>
             </div>
           </div>
         </div>
 
-        <div class="highscore-box">
-          <h3 style="margin: 0; color: var(--accent-cyan)">
-            🏆 TOP RANKING HIGHSCORE
-          </h3>
-          <table class="highscore-table">
-            <thead>
-              <tr>
-                <th>Rank</th>
-                <th>Username</th>
-                <th>High Score</th>
-                <th>Tanggal Main</th>
-              </tr>
-            </thead>
-            <tbody id="highscore-list"></tbody>
-          </table>
+        <!-- Leaderboard Panel -->
+        <div class="panel leaderboard-panel">
+          <h3><i class="fas fa-crown"></i> Top Rankings</h3>
+          <div class="table-wrapper">
+            <table class="leaderboard-table">
+              <thead>
+                <tr>
+                  <th>Rank</th>
+                  <th>Player</th>
+                  <th>Score</th>
+                  <th>Grade</th>
+                </tr>
+              </thead>
+              <tbody id="highscore-list"></tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
 
+    <!-- Game Page -->
     <div id="game-page" class="page">
-      <div class="arena-container">
-        <div class="battlefields">
-          <div>
-            <div class="screen-label" style="color: var(--accent-cyan)">
-              Anda
-            </div>
-            <canvas id="tetris" width="220" height="440"></canvas>
-          </div>
+      <div class="game-header">
+        <h2><i class="fas fa-cube" style="color: var(--accent-primary)"></i> Arena</h2>
+      </div>
 
-          <div class="game-controls">
-            <div class="stats-group">
-              <div class="mini-box">
-                <h3>Next</h3>
-                <canvas id="next" width="70" height="70"></canvas>
-              </div>
-              <div class="mini-box">
-                <h3>Score</h3>
-                <div id="score">0</div>
-              </div>
-              <div class="mini-box">
-                <h3>Level</h3>
-                <div id="level">1</div>
-              </div>
-            </div>
-            <div style="display: flex; flex-direction: column; gap: 5px">
-              <button
-                class="btn btn-success"
-                id="start-btn"
-                onclick="startGame()"
-              >
-                START
-              </button>
-              <button
-                class="btn btn-danger"
-                id="retreat-btn"
-                onclick="playerRetreat()"
-                style="display: none; background: #d9534f"
-              >
-                RETREAT 🏳️
-              </button>
-              <button
-                class="btn btn-danger"
-                id="back-home-btn"
-                onclick="backToHome()"
-                style="display: none"
-              >
-                BERANDA
-              </button>
-            </div>
+      <div class="game-container">
+        <!-- Player Board -->
+        <div class="battlefield">
+          <div class="screen-label" style="color: var(--accent-primary)">
+            <i class="fas fa-user"></i> Your Board
           </div>
-
-          <div>
-            <div class="screen-label" style="color: #e53e3e">Layar Musuh</div>
-            <canvas id="enemy-tetris" width="150" height="300"></canvas>
-          </div>
+          <canvas id="tetris" width="220" height="440"></canvas>
         </div>
 
-        <div class="chat-sidebar">
-          <h4 style="margin: 0 0 8px 0; color: var(--text-muted)">
-            IN-GAME CHAT
-          </h4>
-          <div id="chat-box-game" class="chat-box-area"></div>
-          <div class="chat-input-zone">
-            <input
-              type="text"
-              id="message-game"
-              placeholder="Ketik obrolan ingame..."
-              onkeypress="handleGameChatKey(event)"
-            />
-            <button
-              class="btn btn-primary"
-              onclick="sendGlobalChat('message-game')"
-            >
-              Kirim
+        <!-- Middle Controls & Stats -->
+        <div class="game-sidebar">
+          <div class="stat-card">
+            <div class="stat-label">Next</div>
+            <canvas id="next" width="70" height="70" style="background: transparent; border: none; box-shadow: none;"></canvas>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Score</div>
+            <div class="stat-value" id="score">0</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Level</div>
+            <div class="stat-value" id="level">1</div>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            <button class="btn btn-success" id="start-btn" style="width: 100%" onclick="startGame()">
+              <i class="fas fa-play"></i> Start
+            </button>
+            <button class="btn btn-danger" id="retreat-btn" style="width: 100%; display: none;" onclick="playerRetreat()">
+              <i class="fas fa-flag"></i> Retreat
+            </button>
+            <button class="btn btn-secondary" id="back-home-btn" style="width: 100%; display: none;" onclick="backToHome()">
+              <i class="fas fa-home"></i> Home
             </button>
           </div>
         </div>
+
+        <!-- Enemy Board -->
+        <div class="battlefield">
+          <div class="screen-label" style="color: var(--accent-danger)">
+            <i class="fas fa-skull"></i> Opponent
+          </div>
+          <canvas id="enemy-tetris" width="150" height="300"></canvas>
+        </div>
+      </div>
+
+      <!-- Game Chat -->
+      <div class="chat-section game-chat">
+        <h4><i class="fas fa-comment-dots"></i> Match Chat</h4>
+        <div id="chat-box-game" class="chat-box"></div>
+        <div class="chat-input-group">
+          <input type="text" id="message-game" placeholder="Type a message..." onkeypress="if(event.key === 'Enter') sendGlobalChat('message-game')" />
+          <button class="btn btn-primary" onclick="sendGlobalChat('message-game')">
+            <i class="fas fa-paper-plane"></i>
+          </button>
+        </div>
       </div>
     </div>
 
+    <!-- SOCKET.IO SCRIPT -->
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <script>
       const API_BASE_URL = "http://127.0.0.1"; 
 
       let currentRoomId = null;
-      let opponentUser = "Musuh";
-      let currentUser = "Pemain";
+      let opponentUser = "Opponent";
+      let currentUser = "Player";
       let accessToken = "";
       let socket;
-
       let highscores = [];
+      let isSearching = false;
 
+      // ── CUSTOM TOAST ALERTS ──
+      function showToast(message, type = 'error') {
+        const container = document.getElementById('toast-container');
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        
+        const icon = type === 'error' ? 'fa-exclamation-circle' : 'fa-check-circle';
+        toast.innerHTML = `<i class="fas ${icon}"></i> <span>${message}</span>`;
+        
+        container.appendChild(toast);
+        
+        setTimeout(() => {
+          toast.classList.add('fadeOut');
+          setTimeout(() => toast.remove(), 300);
+        }, 3000);
+      }
+
+      // ── API & RANKINGS ──
       async function loadRankings() {
         try {
           const response = await fetch(`${API_BASE_URL}/api/rankings`);
-          if (!response.ok) {
-            throw new Error("Gagal mengambil ranking");
-          }
+          if (!response.ok) throw new Error("Gagal mengambil ranking");
           highscores = await response.json();
           renderHighscores();
         } catch (err) {
@@ -586,11 +965,32 @@
         }
       }
 
+      function renderHighscores() {
+        const tbody = document.getElementById("highscore-list");
+        tbody.innerHTML = "";
+        highscores.sort((a, b) => b.score - a.score);
+        
+        tbody.innerHTML = highscores.slice(0, 10).map((score, index) => {
+          let rankClass = "";
+          if (index === 0) rankClass = "gold";
+          else if (index === 1) rankClass = "silver";
+          else if (index === 2) rankClass = "bronze";
+          
+          return `
+            <tr>
+              <td><span class="rank-badge ${rankClass}">${index + 1}</span></td>
+              <td style="font-weight: 600; color: var(--text-primary);">${score.username || "Unknown"}</td>
+              <td style="color: var(--text-secondary);">${(score.score || 0).toLocaleString()}</td>
+              <td style="color: var(--accent-warning); font-weight: bold;">${score.grade || "-"}</td>
+            </tr>
+          `;
+        }).join("");
+      }
+
       async function saveScore(score) {
         try {
           const username = currentUser;
           const parsedScore = Math.floor(Number(score));
-
           if (!username || isNaN(parsedScore) || parsedScore < 0) return;
 
           const response = await fetch(`${API_BASE_URL}/api/rankings/update`, {
@@ -603,117 +1003,36 @@
           });
 
           const result = await response.json();
-          console.log("Score saved:", result);
-
-          if (result.success) {
-            await loadRankings();
-          }
+          if (result.success) await loadRankings();
         } catch (err) {
           console.error("Failed to save score:", err);
         }
       }
 
+      // ── NAVIGATION & AUTHENTICATION ──
       function navigateTo(pageId) {
-        document
-          .querySelectorAll(".page")
-          .forEach((p) => p.classList.remove("active"));
+        document.querySelectorAll(".page").forEach((p) => p.classList.remove("active"));
         document.getElementById(pageId).classList.add("active");
-
-        if (pageId === "home-page") {
-          loadRankings();
-        }
-        if (pageId === "game-page") {
-          setTimeout(() => draw(), 50);
-        }
+        if (pageId === "home-page") loadRankings();
+        if (pageId === "game-page") setTimeout(() => draw(), 50);
       }
 
-      // ── WEBSOCKET GABUNGAN UTUH ──────────────────────────────────────────
-      function escapeHtml(str) {
-        return str
-          .replace(/&/g, "&amp;")
-          .replace(/</g, "&lt;")
-          .replace(/>/g, "&gt;")
-          .replace(/"/g, "&quot;")
-          .replace(/'/g, "&#039;");
-      }
-      function initializeSocketConnection() {
-        // 🟢 Diarahkan ke API_BASE_URL Nginx Docker
-        socket = io(API_BASE_URL, {
-          path: "/api/chat/socket.io",
-          auth: { token: accessToken },
-        });
-
-        socket.on("receive_message", (data) => {
-          const time = new Date(data.timestamp).toLocaleTimeString();
-          const safeUsername = escapeHtml(data.username);
-          const safeMessage = escapeHtml(data.message);
-          const cleanHTML = `[${time}] <span class="username">${safeUsername}</span>: ${safeMessage}`;
-
-          document.getElementById("chat-box-home").innerHTML +=
-            `<div class="msg-item">${cleanHTML}</div>`;
-
-          const gameChat = document.getElementById("chat-box-game");
-          gameChat.innerHTML += `<div class="msg-item">${cleanHTML}</div>`;
-          gameChat.scrollTop = gameChat.scrollHeight;
-        });
-
-        socket.on("match_found", (data) => {
-          currentRoomId = data.roomId;
-          opponentUser = data.opponent;
-
-          const matchBtn = document.getElementById("match-btn");
-          matchBtn.innerText = "CARI LAWAN TANDING ⚔️";
-          matchBtn.disabled = false;
-
-          alert(
-            `🎮 Lawan ditemukan! Anda akan bertanding melawan: ${opponentUser}`,
-          );
-          navigateTo("game-page");
-          startGame();
-        });
-
-        socket.on("enemy_board_update", (data) => {
-          if (data.username !== currentUser) {
-            enemyArena = data.arena;
-          }
-        });
-
-        socket.on("enemy_retreated", async (data) => {
-          if (!gameRunning) return;
-          gameRunning = false;
-
-          player.score += 500;
-
-          try {
-            saveScore(player.score);
-            loadRankings();
-          } catch (err) {
-            console.error("Failed saving WO score:", err);
-          }
-
-          document.getElementById("score").innerText = player.score;
-
-          const userGrade = calculateGrade(player.score);
-
-          document.getElementById("result-title").innerText =
-            "🎉 YOU WIN! (Lawan WO)";
-          document.getElementById("result-title").style.color =
-            "var(--accent-cyan)";
-
-          document.getElementById("result-desc").innerHTML = `
-            Musuh (<strong>${data.username}</strong>) telah menyerah dari pertandingan.<br><br>
-            Skor Akhir Anda: <strong>${player.score}</strong> (${userGrade})
-        `;
-
-          document.getElementById("match-result-overlay").style.display =
-            "flex";
-        });
+      function switchAuthTab(type) {
+        const isLogin = type === "login";
+        document.getElementById("form-login-container").style.display = isLogin ? "block" : "none";
+        document.getElementById("form-register-container").style.display = isLogin ? "none" : "block";
+        document.getElementById("tab-login-btn").classList.toggle("active", isLogin);
+        document.getElementById("tab-register-btn").classList.toggle("active", !isLogin);
       }
 
-      // ── LOGIKA AUTENTIKASI API GATEWAY ─────────────────────────────────────
       async function handleAuthLogin() {
         const email = document.getElementById("login-email").value.trim();
         const password = document.getElementById("login-password").value.trim();
+        
+        if (!email || !password) {
+          showToast("Please fill in all fields.", "error");
+          return;
+        }
 
         try {
           const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
@@ -726,19 +1045,19 @@
           if (result.success) {
             accessToken = result.data.accessToken;
             currentUser = result.data.user.username;
-
             localStorage.setItem("accessToken", accessToken);
             localStorage.setItem("currentUser", currentUser);
-            document.getElementById("user-display-name").innerText =
-              currentUser;
-
+            document.getElementById("user-display-name").innerText = currentUser;
+            
+            showToast("Login successful!", "success");
             initializeSocketConnection();
             navigateTo("home-page");
+            setTimeout(() => { document.getElementById("instructions-modal").classList.add("active"); }, 300);
           } else {
-            alert("Gagal login: " + result.message);
+            showToast(result.message || "Login failed.", "error");
           }
         } catch (err) {
-          alert("Koneksi gagal ke Auth Service API Gateway!");
+          showToast("Connection error to Auth Service!", "error");
         }
       }
 
@@ -748,7 +1067,7 @@
         const password = document.getElementById("reg-password").value.trim();
 
         if (!username || !email || !password) {
-          alert("Semua kolom registrasi wajib diisi!");
+          showToast("Please fill in all fields.", "error");
           return;
         }
 
@@ -761,77 +1080,156 @@
           const result = await response.json();
 
           if (result.success || response.status === 201 || result.id) {
-            alert("🎉 Registrasi berhasil! Silakan login.");
+            showToast("Registration successful! Please login.", "success");
             switchAuthTab("login");
             document.getElementById("login-email").value = email;
             document.getElementById("login-password").value = password;
           } else {
-            alert(
-              "Gagal registrasi: " +
-                (result.message || "Periksa data Anda kembali."),
-            );
+            showToast(result.message || "Registration failed. Check your data.", "error");
           }
         } catch (err) {
-          alert("Koneksi gagal ke Register Service API Gateway!");
+          showToast("Connection error to Register Service!", "error");
         }
       }
 
-      function switchAuthTab(type) {
-        document.getElementById("form-login-container").style.display =
-          type === "login" ? "block" : "none";
-        document.getElementById("form-register-container").style.display =
-          type === "login" ? "none" : "block";
-        document.getElementById("tab-login-btn").style.color =
-          type === "login" ? "var(--accent-cyan)" : "var(--text-muted)";
-        document.getElementById("tab-register-btn").style.color =
-          type === "login" ? "var(--text-muted)" : "var(--accent-cyan)";
-      }
-
       function logout() {
+        if (isSearching && socket && socket.connected) {
+           socket.emit("cancel_matchmaking", { username: currentUser });
+        }
         if (socket) socket.disconnect();
-
         localStorage.removeItem("accessToken");
         localStorage.removeItem("currentUser");
-
         accessToken = null;
         currentUser = null;
-
+        isSearching = false;
+        
+        const btn = document.getElementById("match-btn");
+        btn.className = "btn btn-success";
+        btn.innerHTML = `<i class="fas fa-play"></i> Find Opponent`;
+        
         navigateTo("login-page");
       }
-      function backToHome() {
-        gameRunning = false;
-        document.getElementById("back-home-btn").style.display = "none";
-        document.getElementById("start-btn").style.display = "block";
-        navigateTo("home-page");
-      }
-      function sendGlobalChat(inputId) {
-        const el = document.getElementById(inputId);
-        const msg = el.value.trim();
-        if (!msg || !socket) return;
-        socket.emit("send_message", { username: currentUser, message: msg });
-        el.value = "";
-      }
-      function handleGameChatKey(e) {
-        if (e.key === "Enter") sendGlobalChat("message-game");
+
+      // ── WEBSOCKET & CHAT LOGIC ──
+      function escapeHtml(str) {
+        return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
       }
 
-      function renderHighscores() {
-        const tbody = document.getElementById("highscore-list");
-        tbody.innerHTML = "";
-        highscores.sort((a, b) => b.score - a.score);
-        highscores.forEach((item, index) => {
-          tbody.innerHTML += `<tr><td>${index + 1}</td><td><span class="username">${item.username}</span></td><td><strong>${item.score.toLocaleString()}</strong> <small style="color:#ffcc00">(${item.grade})</small></td><td>${item.date}</td></tr>`;
+      function initializeSocketConnection() {
+        socket = io(API_BASE_URL, {
+          path: "/api/chat/socket.io",
+          auth: { token: accessToken },
+        });
+
+        socket.on("receive_message", (data) => {
+          const time = new Date(data.timestamp || Date.now()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+          const safeUser = escapeHtml(data.username);
+          const safeMsg = escapeHtml(data.message);
+          
+          const html = `<div class="chat-message"><span style="color: var(--text-tertiary); font-size: 11px; margin-right: 4px;">[${time}]</span><span class="chat-username">${safeUser}:</span> <span style="color: var(--text-secondary)">${safeMsg}</span></div>`;
+
+          const homeChat = document.getElementById("chat-box-home");
+          if(homeChat) { homeChat.innerHTML += html; homeChat.scrollTop = homeChat.scrollHeight; }
+
+          const gameChat = document.getElementById("chat-box-game");
+          if(gameChat) { gameChat.innerHTML += html; gameChat.scrollTop = gameChat.scrollHeight; }
+        });
+
+        socket.on("match_found", (data) => {
+          isSearching = false;
+          
+          const matchBtn = document.getElementById("match-btn");
+          matchBtn.className = "btn btn-success";
+          matchBtn.innerHTML = `<i class="fas fa-play"></i> Find Opponent`;
+
+          currentRoomId = data.roomId;
+          opponentUser = data.opponent;
+
+          document.getElementById("mf-player").innerText = currentUser;
+          document.getElementById("mf-enemy").innerText = opponentUser;
+          
+          const overlay = document.getElementById("match-found-overlay");
+          overlay.style.display = "flex";
+          overlay.classList.add("active");
+
+          let count = 3;
+          document.getElementById("mf-countdown").innerText = count;
+          
+          const timer = setInterval(() => {
+            count--;
+            document.getElementById("mf-countdown").innerText = count;
+            
+            if(count <= 0) {
+              clearInterval(timer);
+              overlay.classList.remove("active");
+              overlay.style.display = "none";
+              
+              navigateTo("game-page");
+              startGame();
+            }
+          }, 1000);
+        });
+
+        socket.on("enemy_board_update", (data) => {
+          if (data.username !== currentUser) {
+            enemyArena = data.arena;
+          }
+        });
+
+        socket.on("enemy_retreated", async (data) => {
+          if (!gameRunning) return;
+          gameRunning = false;
+          player.score += 500;
+
+          try {
+            saveScore(player.score);
+            loadRankings();
+          } catch (err) {}
+
+          document.getElementById("score").innerText = player.score;
+          const userGrade = calculateGrade(player.score);
+
+          document.getElementById("result-title").innerHTML = `<i class="fas fa-trophy"></i> YOU WIN!`;
+          document.getElementById("result-title").style.color = "var(--accent-success)";
+          document.getElementById("result-desc").innerHTML = `
+            <strong>${data.username}</strong> retreated from the match.<br><br>
+            Final Score: <strong style="color: white">${player.score}</strong> (Grade: ${userGrade})
+          `;
+          document.getElementById("match-result-overlay").style.display = "flex";
         });
       }
-      function calculateGrade(score) {
-        let n = score / 50;
-        if (n >= 86) return "A";
-        if (n >= 75) return "B";
-        if (n >= 65) return "C";
-        return "D";
+
+      function sendGlobalChat(inputId) {
+        const input = document.getElementById(inputId);
+        const msg = input.value.trim();
+        if (!msg || !socket) return;
+        socket.emit("send_message", { username: currentUser, message: msg });
+        input.value = "";
       }
 
-      // ── TETRIS CORE ENGINE GAMEPLAY ───────────────────────────────────────
+      function toggleMatchmaking() {
+        const btn = document.getElementById("match-btn");
+        
+        if (!isSearching) {
+          isSearching = true;
+          btn.className = "btn btn-danger";
+          btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Searching... (Cancel)`;
+          
+          if (socket && socket.connected) {
+            socket.emit("join_matchmaking", { username: currentUser });
+          }
+        } else {
+          isSearching = false;
+          btn.className = "btn btn-success";
+          btn.innerHTML = `<i class="fas fa-play"></i> Find Opponent`;
+          
+          if (socket && socket.connected) {
+            socket.emit("cancel_matchmaking", { username: currentUser });
+          }
+        }
+      }
+
+      // ── TETRIS ENGINE ──
       const canvas = document.getElementById("tetris");
       const context = canvas.getContext("2d");
       context.scale(22, 22);
@@ -846,14 +1244,15 @@
 
       const colors = [
         null,
-        "#FF0D72",
-        "#0DC2FF",
-        "#0DFF72",
-        "#F538FF",
-        "#FF8E0D",
-        "#FFE138",
-        "#3877FF",
+        "#ec4899", /* Pink */ 
+        "#06b6d4", /* Cyan */
+        "#10b981", /* Emerald */
+        "#8b5cf6", /* Purple */ 
+        "#f97316", /* Orange */
+        "#eab308", /* Yellow */
+        "#3b82f6"  /* Blue */
       ];
+      
       let arena = createMatrix(10, 20);
       let enemyArena = createMatrix(10, 20);
       let player = {
@@ -866,75 +1265,34 @@
         lines: 0,
         level: 1,
       };
-      let dropCounter = 0,
-        dropInterval = 1000,
-        lastTime = 0,
-        gameRunning = false,
-        keyStates = {},
-        moveTimers = {};
+
+      let dropCounter = 0, dropInterval = 1000, lastTime = 0, gameRunning = false;
+      let keyStates = {}, moveTimers = {};
 
       function createMatrix(w, h) {
         const m = [];
-        while (h--) {
-          m.push(new Array(w).fill(0));
-        }
+        while (h--) { m.push(new Array(w).fill(0)); }
         return m;
       }
+
       function createPiece(type) {
-        if (type === "T")
-          return [
-            [0, 0, 0],
-            [1, 1, 1],
-            [0, 1, 0],
-          ];
-        if (type === "O")
-          return [
-            [2, 2],
-            [2, 2],
-          ];
-        if (type === "L")
-          return [
-            [0, 3, 0],
-            [0, 3, 0],
-            [0, 3, 3],
-          ];
-        if (type === "J")
-          return [
-            [0, 4, 0],
-            [0, 4, 0],
-            [4, 4, 0],
-          ];
-        if (type === "I")
-          return [
-            [0, 0, 0, 0],
-            [5, 5, 5, 5],
-            [0, 0, 0, 0],
-            [0, 0, 0, 0],
-          ];
-        if (type === "S")
-          return [
-            [0, 6, 6],
-            [6, 6, 0],
-            [0, 0, 0],
-          ];
-        if (type === "Z")
-          return [
-            [7, 7, 0],
-            [0, 7, 7],
-            [0, 0, 0],
-          ];
+        if (type === "T") return [[0, 0, 0], [1, 1, 1], [0, 1, 0]];
+        if (type === "O") return [[2, 2], [2, 2]];
+        if (type === "L") return [[0, 3, 0], [0, 3, 0], [0, 3, 3]];
+        if (type === "J") return [[0, 4, 0], [0, 4, 0], [4, 4, 0]];
+        if (type === "I") return [[0, 0, 0, 0], [5, 5, 5, 5], [0, 0, 0, 0], [0, 0, 0, 0]];
+        if (type === "S") return [[0, 6, 6], [6, 6, 0], [0, 0, 0]];
+        if (type === "Z") return [[7, 7, 0], [0, 7, 7], [0, 0, 0]];
       }
 
       function drawMatrix(matrix, offset, ctx, isGhost = false) {
         matrix.forEach((row, y) => {
           row.forEach((value, x) => {
             if (value !== 0) {
-              ctx.fillStyle = isGhost
-                ? "rgba(255, 255, 255, 0.12)"
-                : colors[value];
+              ctx.fillStyle = isGhost ? "rgba(255, 255, 255, 0.05)" : colors[value];
               ctx.fillRect(x + offset.x, y + offset.y, 1, 1);
               ctx.lineWidth = 0.05;
-              ctx.strokeStyle = isGhost ? colors[value] : "#111";
+              ctx.strokeStyle = isGhost ? "rgba(255,255,255,0.1)" : "#0f1115";
               ctx.strokeRect(x + offset.x, y + offset.y, 1, 1);
             }
           });
@@ -950,24 +1308,22 @@
         return g;
       }
 
-      // ... [Sisa fungsi mekanik inti Tetris tetap sama seperti versi aslimu] ...
       function draw() {
-        context.fillStyle = "#111418";
-        context.fillRect(0, 0, canvas.width, canvas.height);
+        context.clearRect(0, 0, canvas.width, canvas.height);
+        enemyContext.clearRect(0, 0, enemyCanvas.width, enemyCanvas.height);
+        nextContext.clearRect(0, 0, nextCanvas.width, nextCanvas.height);
+
         drawMatrix(arena, { x: 0, y: 0 }, context);
         if (gameRunning) {
           drawMatrix(player.matrix, getGhostPosition(), context, true);
           drawMatrix(player.matrix, player.pos, context);
         }
 
-        enemyContext.fillStyle = "#111418";
-        enemyContext.fillRect(0, 0, enemyCanvas.width, enemyCanvas.height);
         drawMatrix(enemyArena, { x: 0, y: 0 }, enemyContext);
 
-        nextContext.fillStyle = "#111418";
-        nextContext.fillRect(0, 0, nextCanvas.width, nextCanvas.height);
-        if (player.nextMatrix)
+        if (player.nextMatrix) {
           drawMatrix(player.nextMatrix, { x: 1, y: 1 }, nextContext);
+        }
 
         if (gameRunning && socket && socket.connected && currentRoomId) {
           socket.emit("player_board_update", {
@@ -982,8 +1338,9 @@
         const [m, o] = [p.matrix, p.pos];
         for (let y = 0; y < m.length; ++y) {
           for (let x = 0; x < m[y].length; ++x) {
-            if (m[y][x] !== 0 && (a[y + o.y] && a[y + o.y][x + o.x]) !== 0)
+            if (m[y][x] !== 0 && (a[y + o.y] && a[y + o.y][x + o.x]) !== 0) {
               return true;
+            }
           }
         }
         return false;
@@ -996,6 +1353,7 @@
           });
         });
       }
+
       function playerDrop() {
         player.pos.y++;
         if (collide(arena, player)) {
@@ -1006,6 +1364,7 @@
         }
         dropCounter = 0;
       }
+
       function playerHardDrop() {
         if (!gameRunning) return;
         player.pos.y = getGhostPosition().y;
@@ -1014,6 +1373,7 @@
         arenaSweep();
         dropCounter = 0;
       }
+
       function playerHold() {
         if (!gameRunning || player.hasHeld) return;
         if (!player.holdMatrix) {
@@ -1024,8 +1384,7 @@
           player.matrix = player.holdMatrix;
           player.holdMatrix = t;
           player.pos.y = 0;
-          player.pos.x =
-            ((arena[0].length / 2) | 0) - ((player.matrix[0].length / 2) | 0);
+          player.pos.x = ((arena[0].length / 2) | 0) - ((player.matrix[0].length / 2) | 0);
         }
         player.hasHeld = true;
       }
@@ -1052,26 +1411,27 @@
 
       async function playerReset() {
         const p = "ILJOTSZ";
-        player.matrix =
-          player.nextMatrix || createPiece(p[(p.length * Math.random()) | 0]);
+        player.matrix = player.nextMatrix || createPiece(p[(p.length * Math.random()) | 0]);
         player.nextMatrix = createPiece(p[(p.length * Math.random()) | 0]);
         player.pos.y = 0;
-        player.pos.x =
-          ((arena[0].length / 2) | 0) - ((player.matrix[0].length / 2) | 0);
+        player.pos.x = ((arena[0].length / 2) | 0) - ((player.matrix[0].length / 2) | 0);
         player.hasHeld = false;
 
         if (collide(arena, player)) {
           gameRunning = false;
           await saveScore(player.score);
-          alert("💥 MATCH OVER! Score Anda: " + player.score);
-          navigateTo("home-page");
-
+          
           if (socket) {
             socket.emit("send_message", {
-              username: "SYSTEM ⚔️",
-              message: `${currentUser} selesai bertanding dengan skor: ${player.score}!`,
+              username: "System",
+              message: `${currentUser} finished with score: ${player.score}!`,
             });
           }
+
+          document.getElementById("result-title").innerHTML = `<i class="fas fa-skull"></i> GAME OVER`;
+          document.getElementById("result-title").style.color = "var(--text-primary)";
+          document.getElementById("result-desc").innerHTML = `Final Score: <strong style="color:white">${player.score}</strong>`;
+          document.getElementById("match-result-overlay").style.display = "flex";
 
           document.getElementById("back-home-btn").style.display = "block";
           document.getElementById("retreat-btn").style.display = "none";
@@ -1082,6 +1442,7 @@
         player.pos.x += d;
         if (collide(arena, player)) player.pos.x -= d;
       }
+
       function rotate(m, d) {
         for (let y = 0; y < m.length; ++y) {
           for (let x = 0; x < y; ++x) {
@@ -1091,6 +1452,7 @@
         if (d > 0) m.forEach((r) => r.reverse());
         else m.reverse();
       }
+
       function playerRotate(d) {
         const pos = player.pos.x;
         let o = 1;
@@ -1107,24 +1469,23 @@
       }
 
       function handleContinuousInput() {
-        if (document.activeElement === document.getElementById("message-game"))
-          return;
-        if (keyStates[37] && !moveTimers[37]) {
+        if (document.activeElement.tagName === "INPUT") return;
+        if ((keyStates[37] || keyStates[65]) && !moveTimers[37]) {
           playerMove(-1);
           moveTimers[37] = setTimeout(() => { moveTimers[37] = null; }, 90);
         }
-        if (keyStates[39] && !moveTimers[39]) {
+        if ((keyStates[39] || keyStates[68]) && !moveTimers[39]) {
           playerMove(1);
           moveTimers[39] = setTimeout(() => { moveTimers[39] = null; }, 90);
         }
-        if (keyStates[40] && !moveTimers[40]) {
+        if ((keyStates[40] || keyStates[83]) && !moveTimers[40]) {
           playerDrop();
           moveTimers[40] = setTimeout(() => { moveTimers[40] = null; }, 50);
         }
       }
 
       document.addEventListener("keydown", (e) => {
-        if (!gameRunning || document.activeElement === document.getElementById("message-game")) return;
+        if (!gameRunning || document.activeElement.tagName === "INPUT") return;
         keyStates[e.keyCode] = true;
         if (e.keyCode === 32) {
           e.preventDefault();
@@ -1135,6 +1496,7 @@
           playerHold();
         }
       });
+
       document.addEventListener("keyup", (e) => {
         keyStates[e.keyCode] = false;
         if (moveTimers[e.keyCode]) {
@@ -1147,7 +1509,9 @@
         if (gameRunning) {
           const dt = time - lastTime;
           dropCounter += dt;
-          if (dropCounter > Math.max(70, dropInterval - (player.level - 1) * 130)) playerDrop();
+          if (dropCounter > Math.max(70, dropInterval - (player.level - 1) * 130)) {
+            playerDrop();
+          }
           handleContinuousInput();
         }
         lastTime = time;
@@ -1165,47 +1529,56 @@
         player.holdMatrix = null;
         document.getElementById("score").innerText = 0;
         document.getElementById("level").innerText = 1;
+        
         gameRunning = true;
         document.getElementById("retreat-btn").style.display = "block";
         document.getElementById("start-btn").style.display = "none";
+        
         playerReset();
         update();
       }
 
-      function startMatchmaking() {
-        const btn = document.getElementById("match-btn");
-        btn.innerText = "Mencari Lawan... ⏳";
-        btn.disabled = true;
-        if (socket && socket.connected) {
-          socket.emit("join_matchmaking", { username: currentUser });
-        }
-      }
-
       function playerRetreat() {
         if (!gameRunning || !currentRoomId) return;
-        if (confirm("Apakah Anda yakin ingin menyerah? 🏳️")) {
-          gameRunning = false;
-          socket.emit("player_retreat", {
-            roomId: currentRoomId,
-            username: currentUser,
-          });
+        document.getElementById('retreat-confirm-overlay').classList.add('active');
+      }
 
-          document.getElementById("result-title").innerText = "🏳️ YOU RETREATED";
-          document.getElementById("result-title").style.color = "#e53e3e";
-          document.getElementById("result-desc").innerHTML = `
-                    Anda memilih keluar dari arena pertandingan.<br><br>
-                    Skor Terakhir: <strong>${player.score}</strong>
-                `;
-          document.getElementById("match-result-overlay").style.display = "flex";
-        }
+      function executeRetreat() {
+        document.getElementById('retreat-confirm-overlay').classList.remove('active');
+        gameRunning = false;
+        socket.emit("player_retreat", {
+          roomId: currentRoomId,
+          username: currentUser,
+        });
+
+        document.getElementById("result-title").innerHTML = `<i class="fas fa-flag"></i> RETREATED`;
+        document.getElementById("result-title").style.color = "var(--accent-danger)";
+        document.getElementById("result-desc").innerHTML = `You surrendered.<br><br>Final Score: <strong style="color:white">${player.score}</strong>`;
+        document.getElementById("match-result-overlay").style.display = "flex";
       }
 
       function closeResultAndGoHome() {
+        document.getElementById("match-result-overlay").classList.remove("active");
         document.getElementById("match-result-overlay").style.display = "none";
         document.getElementById("retreat-btn").style.display = "none";
         document.getElementById("start-btn").style.display = "block";
         currentRoomId = null;
         navigateTo("home-page");
+      }
+
+      function backToHome() {
+        gameRunning = false;
+        document.getElementById("back-home-btn").style.display = "none";
+        document.getElementById("start-btn").style.display = "block";
+        navigateTo("home-page");
+      }
+
+      function calculateGrade(score) {
+        let n = score / 50;
+        if (n >= 86) return "A";
+        if (n >= 75) return "B";
+        if (n >= 65) return "C";
+        return "D";
       }
 
       window.addEventListener("load", () => {
@@ -1215,9 +1588,8 @@
         if (savedToken && savedUser) {
           accessToken = savedToken;
           currentUser = savedUser;
-
           document.getElementById("user-display-name").innerText = currentUser;
-
+          
           initializeSocketConnection();
           navigateTo("home-page");
         }
